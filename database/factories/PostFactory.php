@@ -2,24 +2,25 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 class PostFactory extends Factory
 {
-    protected $model = \App\Models\Post::class;
-
     public function definition(): array
     {
-        $title = $this->faker->sentence(6, true);
-
+        $title = $this->faker->sentence();
+        
         return [
+            // This creates posts the "Senior" way: it picks a random existing user ID
+            'user_id' => User::pluck('id')->random(), 
             'title' => $title,
-            'slug'     => Str::slug($title) . '-' . Str::random(5), // unique-ish slug
-            'category' => $this->faker->randomElement(['Tech', 'Health', 'Sports', 'Politics', 'Lifestyle']),
+            'slug' => Str::slug($title),
             'content' => $this->faker->paragraphs(3, true),
-            'image' => $this->faker->image('storage/app/public/images', 640, 480, null, false),
-
+            'category' => $this->faker->randomElement(['Tech', 'Lifestyle', 'News', 'Gaming']),
+            'image' => null, // Better to leave null than to have broken image paths
+            'views' => $this->faker->numberBetween(0, 500),
         ];
     }
 }

@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('content');
+
             $table->string('author')->nullable();
             $table->tinyInteger('status')->default(0);
             $table->string('category')->nullable();
@@ -23,7 +29,9 @@ return new class extends Migration
             $table->integer('views')->default(0);
 
             $table->timestamps();
+
         });
+        
     }
 
     /**

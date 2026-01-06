@@ -1,121 +1,110 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Post;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PostController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
-     * Display a listing of the resource.
+     * Display a listing of posts with Search and Category filtering.
      */
     public function index(Request $request)
-        {
-            $query = Post::latest();
+    {
+        // Senior Tip: Use 'with' to eager-load users and prevent N+1 performance issues
+        $posts = Post::with('user')
+            ->latest()
+            ->filter($request->only(['search', 'category'])) // Uses the scope from Post model
+            ->paginate(6)
+            ->withQueryString();
 
-            if ($request->has('search')) {
-                $search = $request->input('search');
-                $query->where('title', 'like', "%{$search}%")
-                    ->orWhere('content', 'like', "%{$search}%");
-            }
+        // Optimized: Fetch unique categories efficiently
+        $categories = Post::select('category')
+            ->whereNotNull('category')
+            ->distinct()
+            ->orderBy('category')
+            ->get();
 
-            if ($request->has('category')) {
-                $query->where('category', $request->category);
-            }
+        $latestPosts = Post::latest()->take(5)->get();
 
-            $posts = $query->paginate(10);
+        return view('posts.index', compact('posts', 'categories', 'latestPosts'));
+    }
 
-            // Sidebar data
-            $latestPosts = Post::latest()->take(5)->get();
-            $categories = Post::select('category')->distinct()->get();
-
-            return view('posts.index', compact('posts', 'latestPosts', 'categories'));
-        }
-
-
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
+        $this->authorize('create', Post::class);
         return view('posts.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
+        $this->authorize('create', Post::class);
+
         $validated = $request->validate([
-            'title' => 'required|max:255',
-            'content' => 'required',
-            'category' => 'required|max:100',
-            'image' => 'nullable|image|max:2048',
+            'title'    => 'required|string|max:255',
+            'content'  => 'required|string',
+            'category' => 'nullable|string|max:100',
+            'image'    => 'nullable|image|max:2048',
         ]);
 
+        $validated['slug'] = Str::slug($validated['title']);
+        $validated['user_id'] = $request->user()->id;
+
         if ($request->hasFile('image')) {
-        $validated['image'] = $request->file('image')->store('images', 'public');
-
+            $validated['image'] = $request->file('image')->store('posts', 'public');
         }
-
-        // Auto-generate slug from title
-        $validated['slug'] = Str::slug($validated['title'], '-');
 
         Post::create($validated);
 
         return redirect()->route('posts.index')->with('success', 'Post created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Post $post)
     {
-        $post = Post::findOrFail($id);
-
-        // Increment views safely
         $post->increment('views');
-        return view('posts.show', compact('post'));
+
+        $latestPosts = Post::latest()->take(5)->get();
+        
+        // Use the categories we already have in memory or a quick query
+        $categories = Post::select('category')->whereNotNull('category')->distinct()->get();
+
+        return view('posts.show', compact('post', 'latestPosts', 'categories'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(Post $post)
     {
-        $post = Post::findOrFail($id);
+        $this->authorize('update', $post);
         return view('posts.edit', compact('post'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Post $post)
     {
-        $post = Post::findOrFail($id);
+        $this->authorize('update', $post);
 
         $validated = $request->validate([
-            'title' => 'required|max:255',
-            'content' => 'required',
-            'category' => 'required|max:100',
-            'image' => 'nullable|image|max:2048',
+            'title'    => 'required|string|max:255',
+            'content'  => 'required|string',
+            'category' => 'required|string|max:100',
+            'image'    => 'nullable|image|max:2048',
         ]);
 
-        //handle image upload
         if ($request->hasFile('image')) {
-            // Delete old image if exists
+            // Cleanup: Delete old image if it exists
             if ($post->image) {
                 Storage::disk('public')->delete($post->image);
             }
-            $validated['image'] = $request->file('image')->store('images', 'public');
+            $validated['image'] = $request->file('image')->store('posts', 'public');
         }
-         // Optionally update slug if title changed
+
+        // Only regenerate slug if title changes
         if ($post->title !== $validated['title']) {
-            $validated['slug'] = Str::slug($validated['title'], '-');
+            $validated['slug'] = Str::slug($validated['title']);
         }
 
         $post->update($validated);
@@ -123,18 +112,17 @@ class PostController extends Controller
         return redirect()->route('posts.index')->with('success', 'Post updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Post $post)
     {
-        $post = Post::findOrFail($id);
+        $this->authorize('delete', $post);
+
+        // Cleanup: Remove file from physical storage
         if ($post->image) {
             Storage::disk('public')->delete($post->image);
-    }
+        }
 
         $post->delete();
 
-        return redirect()->route('posts.index')->with('success', 'Post deleted successfully.');
+        return redirect()->route('posts.index')->with('success', 'Post deleted permanently.');
     }
 }
