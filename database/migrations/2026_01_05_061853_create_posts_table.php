@@ -24,9 +24,11 @@ return new class extends Migration
 
             $table->string('author')->nullable();
             $table->tinyInteger('status')->default(0);
-            $table->string('category')->nullable();
+            $table->foreignId('category_id')->nullable()->constrained()->onDelete('set null');
             $table->string('image')->nullable();
             $table->integer('views')->default(0);
+            $table->boolean('is_featured')->default(false);
+           
 
             $table->timestamps();
 

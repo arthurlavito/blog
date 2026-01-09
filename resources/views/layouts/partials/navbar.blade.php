@@ -25,7 +25,6 @@
                     <a href="{{ route('login') }}" class="text-sm font-bold text-gray-700 hover:text-[#4B0082]">Login</a>
                     <a href="{{ route('register') }}" class="px-5 py-2 rounded-full text-sm font-black bg-[#4B0082] text-white hover:shadow-lg transition">Join Us</a>
                 @else
-                    {{-- Senior Move: Action Button based on Role --}}
                     @if(auth()->user()->isAdmin() || auth()->user()->isAuthor())
                         <a href="{{ route('posts.create') }}" class="hidden sm:block px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest bg-emerald-500 text-white hover:bg-emerald-600 transition">
                             + Create Post
@@ -38,8 +37,7 @@
                                 <img class="h-9 w-9 rounded-full border-2 {{ auth()->user()->isAdmin() ? 'border-indigo-500' : 'border-gray-200' }}" 
                                      src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=4B0082&color=fff&bold=true">
                                 
-                                {{-- The Notification Bubble --}}
-                                @if(auth()->user()->isAdmin() && $pendingAuthorCount > 0)
+                                @if(auth()->user()->isAdmin() && ($pendingAuthorCount ?? 0) > 0)
                                     <span class="absolute -top-1 -right-1 flex h-4 w-4">
                                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                         <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[10px] text-white items-center justify-center font-bold">{{ $pendingAuthorCount }}</span>
@@ -49,7 +47,11 @@
                         </button>
 
                         {{-- Dropdown Menu --}}
-                        <div x-show="open" @click.away="open = false" class="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50">
+                        <div x-show="open" @click.away="open = false" 
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             class="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50">
                             <div class="px-4 py-3 border-b border-gray-50">
                                 <p class="text-xs font-black text-[#4B0082] uppercase tracking-widest">{{ auth()->user()->role }}</p>
                                 <p class="text-sm font-medium text-gray-900 truncate">{{ auth()->user()->name }}</p>
@@ -59,7 +61,7 @@
                             
                             @if(auth()->user()->isAdmin())
                                 <a href="{{ route('admin.users.index') }}" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-bold">
-                                    Manage Users ({{ $pendingAuthorCount }})
+                                    Manage Users ({{ $pendingAuthorCount ?? 0 }})
                                 </a>
                             @endif
 

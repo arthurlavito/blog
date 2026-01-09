@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\Category; // Added this import
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Intervention\Image\Laravel\Facades\Image;
 
 class PostController extends Controller
 {
@@ -17,74 +19,85 @@ class PostController extends Controller
      */
     public function index(Request $request)
     {
-        // Eager-load 'user' AND 'likes' to prevent N+1 queries
-        $posts = Post::with(['user', 'likes']) 
+        // 1. Get the latest featured post (Eager load category)
+        $featuredPost = Post::with('user', 'category')
+            ->where('is_featured', true)
+            ->latest()
+            ->first();
+
+        // 2. Get the paginated posts (excluding featured)
+        $posts = Post::with(['user', 'category', 'likes']) 
+            ->when($featuredPost, function ($query) use ($featuredPost) {
+                return $query->where('id', '!=', $featuredPost->id);
+            })
             ->latest()
             ->filter($request->only(['search', 'category'])) 
             ->paginate(6)
             ->withQueryString();
 
-        $categories = Post::select('category')
-            ->whereNotNull('category')
-            ->distinct()
-            ->orderBy('category')
-            ->get();
+        // 3. Fetch from Category Model (Fixes the SQL error)
+        $categories = Category::orderBy('name')->get();
 
         $latestPosts = Post::latest()->take(5)->get();
 
-        return view('posts.index', compact('posts', 'categories', 'latestPosts'));
+        return view('posts.index', compact('posts', 'featuredPost', 'categories', 'latestPosts'));
     }
 
     /**
      * Show the form for creating a new post.
-     * Fixed: Ensure this is accessible and not confused with a slug
      */
     public function create()
     {
-        // This automatically checks PostPolicy@create
-        // It handles the Admin check via your 'before' method 
-        // and the Author check via the 'create' method.
         $this->authorize('create', Post::class);
+        
+        // Need to pass categories to the create form dropdown
+        $categories = Category::orderBy('name')->get();
 
-        return view('posts.create');
+        return view('posts.create', compact('categories'));
     }
+
+    /**
+     * Store a newly created post in storage.
+     */
     public function store(Request $request)
     {
-        // 1. Authorize using Policy
         $this->authorize('create', Post::class);
 
-        // 2. Validate
         $validated = $request->validate([
-            'title'    => 'required|string|max:255',
-            'content'  => 'required|string',
-            'category' => 'nullable|string|max:100',
-            'image'    => 'nullable|image|max:2048', 
+            'title'       => 'required|string|max:255',
+            'content'     => 'required|string',
+            'category_id' => 'nullable|exists:categories,id', // Changed from category
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
-        // 3. Prepare Data
-        $validated['slug'] = Str::slug($validated['title']);
         $validated['user_id'] = auth()->id();
 
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('posts', 'public');
+            $file = $request->file('image');
+            $filename = time() . '.webp';
+            $path = 'posts/' . $filename;
+
+            $image = Image::read($file)
+                ->scale(width: 1200) 
+                ->toWebp(80);
+
+            Storage::disk('public')->put($path, (string) $image);
+            $validated['image'] = $path;
         }
 
-        // 4. Create Post
         Post::create($validated);
 
-        return redirect()->route('dashboard')->with('success', 'Post created successfully!');
+        return redirect()->route('dashboard')->with('success', 'Post published!');
     }
 
     /**
      * Display the specified post.
-     * Performance: Eager load comments, comment users, and comment likes
      */
     public function show(Post $post)
     {
-        // If your show route uses {post:slug}, this works perfectly.
-        // We load everything in one go to make the page load instantly.
         $post->load([
             'user', 
+            'category', // Added category relationship
             'likes', 
             'comments.user', 
             'comments.likes'
@@ -93,42 +106,56 @@ class PostController extends Controller
         $post->increment('views');
 
         $latestPosts = Post::latest()->take(5)->get();
-        $categories = Post::select('category')->whereNotNull('category')->distinct()->get();
+        $categories = Category::orderBy('name')->get(); // Updated
 
         return view('posts.show', compact('post', 'latestPosts', 'categories'));
     }
 
+    /**
+     * Show the form for editing.
+     */
     public function edit(Post $post)
     {
         $this->authorize('update', $post);
-        return view('posts.edit', compact('post'));
+        $categories = Category::orderBy('name')->get(); // Pass categories to edit
+        
+        return view('posts.edit', compact('post', 'categories'));
     }
 
+    /**
+     * Update the post in storage.
+     */
     public function update(Request $request, Post $post)
     {
         $this->authorize('update', $post);
 
         $validated = $request->validate([
-            'title'    => 'required|string|max:255',
-            'content'  => 'required|string',
-            'category' => 'required|string|max:100',
-            'image'    => 'nullable|image|max:2048',
+            'title'       => 'required|string|max:255',
+            'content'     => 'required|string',
+            'category_id' => 'required|exists:categories,id', // Changed from category
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         if ($request->hasFile('image')) {
             if ($post->image) {
                 Storage::disk('public')->delete($post->image);
             }
-            $validated['image'] = $request->file('image')->store('posts', 'public');
-        }
 
-        if ($post->title !== $validated['title']) {
-            $validated['slug'] = Str::slug($validated['title']);
+            $file = $request->file('image');
+            $filename = time() . '.webp';
+            $path = 'posts/' . $filename;
+
+            $image = Image::read($file)
+                ->scale(width: 1200) 
+                ->toWebp(80);
+
+            Storage::disk('public')->put($path, (string) $image);
+            $validated['image'] = $path;
         }
 
         $post->update($validated);
 
-        return redirect()->route('posts.index')->with('success', 'Post updated successfully.');
+        return redirect()->route('posts.index')->with('success', 'Post updated.');
     }
 
     public function destroy(Post $post)
@@ -141,6 +168,6 @@ class PostController extends Controller
 
         $post->delete();
 
-        return redirect()->route('posts.index')->with('success', 'Post deleted permanently.');
+        return redirect()->route('posts.index')->with('success', 'Post deleted.');
     }
 }
