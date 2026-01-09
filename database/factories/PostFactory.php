@@ -10,17 +10,15 @@ class PostFactory extends Factory
 {
     public function definition(): array
     {
-        $title = $this->faker->sentence();
-        
+        $title = fake()->unique()->sentence(8);
         return [
-            // This creates posts the "Senior" way: it picks a random existing user ID
-            'user_id' => User::pluck('id')->random(), 
             'title' => $title,
             'slug' => Str::slug($title),
-            'content' => $this->faker->paragraphs(3, true),
-            'category' => $this->faker->randomElement(['Tech', 'Lifestyle', 'News', 'Gaming']),
-            'image' => null, // Better to leave null than to have broken image paths
-            'views' => $this->faker->numberBetween(0, 500),
+            'content' => fake()->paragraphs(4, true),
+            'category' => fake()->randomElement(['Anime News', 'Manga', 'Reviews', 'Culture']),
+            'user_id' => User::whereIn('role', ['admin', 'author'])->inRandomOrder()->first()?->id ?? User::factory(),
+            'image' => null,
+            'created_at' => fake()->dateTimeBetween('-1 month', 'now'),
         ];
     }
 }

@@ -10,19 +10,20 @@ class PostPolicy
 {
     /**
      * Run before any other authorization checks.
-     * High-level override for Admins.
+     * If this returns true, the user is authorized immediately.
      */
     public function before(User $user, string $ability): bool|null
     {
+        // Admins can do everything.
         if ($user->isAdmin()) {
             return true;
         }
 
-        return null; // Fall through to specific methods
+        return null; // Fall through to specific methods for non-admins
     }
 
     /**
-     * Determine whether guests or users can view the index.
+     * Anyone (including guests) can view the list of posts.
      */
     public function viewAny(?User $user): bool
     {
@@ -30,22 +31,22 @@ class PostPolicy
     }
 
     /**
-     * Determine whether guests or users can view a specific post.
+     * Anyone (including guests) can view a specific post.
      */
     public function view(?User $user, Post $post): bool
     {
         return true;
     }
 
-    
     /**
- * Only a logged-in user with the 'author' role can create.
- * (Guests are automatically blocked here because there is no '?' prefix)
- */
+     * Non-admins can only create if they are an author.
+     * (Admins are already cleared by before())
+     */
     public function create(User $user): bool
     {
         return $user->isAuthor();
     }
+
     /**
      * Only the post owner can update.
      */

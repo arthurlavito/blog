@@ -3,59 +3,62 @@
 @section('title', 'Edit Post')
 
 @section('content')
-<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="py-10 bg-gray-50/50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-    <!-- Main Form Column -->
-    <div class="md:col-span-2 bg-white p-6 rounded shadow-md">
-        <h2 class="text-2xl font-bold text-[#4B0082] mb-4">Edit Post</h2>
-        @include('posts._form', ['post' => $post])
-    </div>
-
-    <!-- Sidebar -->
-    <div class="bg-white p-6 rounded shadow-md space-y-6">
-        <!-- Search -->
-        <div>
-            <h3 class="text-[#4B0082] font-semibold mb-2">Search</h3>
-            <form action="{{ route('posts.index') }}" method="GET">
-                <input 
-                    type="text" 
-                    name="search" 
-                    placeholder="Search posts..." 
-                    class="w-full border border-[#4B0082] rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#4B0082]"
-                    value="{{ request('search') }}"
-                >
-                <button type="submit" class="mt-2 w-full bg-[#4B0082] text-white px-4 py-2 rounded hover:bg-indigo-900">Search</button>
-            </form>
-        </div>
-
-        <!-- Latest Posts -->
-        <div>
-            <h3 class="text-[#4B0082] font-semibold mb-2">Latest Posts</h3>
-            <ul class="space-y-1">
-                @foreach(\App\Models\Post::latest()->take(5)->get() as $latest)
-                    <li>
-                        <a href="{{ route('posts.show', $latest->id) }}" class="text-indigo-600 hover:underline">
-                            {{ Str::limit($latest->title, 35) }}
+            {{-- Main Form Column --}}
+            <div class="lg:col-span-2">
+                <div class="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                    <div class="mb-8 flex justify-between items-end">
+                        <div>
+                            <h2 class="text-3xl font-black text-gray-900 tracking-tight">Edit Post</h2>
+                            <p class="text-sm text-gray-500 font-medium mt-1">Updating: <span class="text-[#4B0082]">{{ $post->title }}</span></p>
+                        </div>
+                        <a href="{{ route('posts.show', $post) }}" class="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#4B0082] transition">
+                            View Original
                         </a>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
+                    </div>
+                    
+                    @include('posts._form', ['post' => $post])
+                </div>
+            </div>
 
-        <!-- Categories -->
-        <div>
-            <h3 class="text-[#4B0082] font-semibold mb-2">Categories</h3>
-            <ul class="space-y-1">
-                @foreach(\App\Models\Post::select('category')->distinct()->get() as $cat)
-                    <li>
-                        <a href="{{ route('posts.index', ['category' => $cat->category]) }}" class="text-gray-700 hover:text-[#4B0082] hover:underline">
-                            {{ $cat->category }}
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
+            {{-- Sidebar --}}
+            <aside class="space-y-8">
+                {{-- Status Card --}}
+                <div class="bg-[#4B0082] p-8 rounded-[2rem] shadow-xl shadow-indigo-100 text-white">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-70">Post Statistics</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold">Created</span>
+                            <span class="text-xs opacity-80">{{ $post->created_at->format('M d, Y') }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold">Last Updated</span>
+                            <span class="text-xs opacity-80">{{ $post->updated_at->diffForHumans() }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Quick Links Card --}}
+                <div class="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+                    <h3 class="text-xs font-black uppercase text-gray-400 tracking-[0.2em] mb-6">Recent News</h3>
+                    <ul class="space-y-4">
+                        @foreach(\App\Models\Post::latest()->take(3)->get() as $latest)
+                            <li>
+                                <a href="{{ route('posts.show', $latest->id) }}" class="group flex flex-col">
+                                    <span class="text-sm font-bold text-gray-800 group-hover:text-[#4B0082] transition-colors leading-tight">
+                                        {{ Str::limit($latest->title, 40) }}
+                                    </span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </aside>
+
         </div>
     </div>
-
 </div>
 @endsection
