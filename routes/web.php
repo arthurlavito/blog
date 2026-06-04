@@ -16,6 +16,9 @@ use App\Http\Controllers\AuthorRequestController;
 */
 Route::get('/', [PostController::class, 'index'])->name('home');
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
+Route::view('/about', 'pages.about')->name('about');
+Route::view('/contact', 'pages.contact')->name('contact');
 
 /*
 |--------------------------------------------------------------------------
