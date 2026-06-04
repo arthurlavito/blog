@@ -15,12 +15,12 @@
             </a>
 
             @foreach($categories as $cat)
-                <a href="{{ route('posts.index', ['category' => $cat->category]) }}"
+                <a href="{{ route('posts.index', ['category' => $cat->id]) }}"
                    class="px-3 py-1 rounded-full text-sm
-                   {{ request('category') === $cat->category
+                   {{ (int) request('category') === $cat->id
                         ? 'bg-indigo-600 text-white'
                         : 'bg-white text-gray-700 hover:bg-gray-200' }}">
-                    {{ ucfirst($cat->category) }}
+                    {{ $cat->name }}
                 </a>
             @endforeach
         </div>

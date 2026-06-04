@@ -38,13 +38,13 @@
         <div>
             <label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Category</label>
             <div class="relative">
-                <select name="category" 
+                <select name="category_id" 
                         required
                         class="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#4B0082] transition shadow-sm appearance-none cursor-pointer">
                     <option value="" disabled {{ !isset($post) ? 'selected' : '' }}>Select Category</option>
-                    @foreach(['Action', 'News', 'Review', 'Updates', 'Community'] as $cat)
-                        <option value="{{ $cat }}" {{ (old('category', $post->category ?? '') == $cat) ? 'selected' : '' }}>
-                            {{ $cat }}
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}" {{ (int) old('category_id', $post->category_id ?? 0) === $cat->id ? 'selected' : '' }}>
+                            {{ $cat->name }}
                         </option>
                     @endforeach
                 </select>
@@ -53,7 +53,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
-            @error('category') 
+            @error('category_id') 
                 <p class="text-rose-500 text-[10px] mt-2 font-bold uppercase italic tracking-wider">{{ $message }}</p> 
             @enderror
         </div>

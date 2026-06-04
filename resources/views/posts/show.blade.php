@@ -19,7 +19,7 @@
                                  class="w-full h-full object-cover">
                             <div class="absolute top-6 left-6">
                                 <span class="px-4 py-2 bg-[#4B0082] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg">
-                                    {{ $post->category }}
+                                    {{ $post->category->name ?? 'Uncategorized' }}
                                 </span>
                             </div>
                         </div>
@@ -222,7 +222,7 @@
                     <h3 class="text-xs font-black uppercase text-gray-400 tracking-[0.2em] mb-6 flex items-center"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></span>Topics</h3>
                     <div class="flex flex-wrap gap-2">
                         @foreach($categories as $cat)
-                            <a href="{{ route('posts.index', ['category' => $cat->category]) }}" class="px-4 py-2 bg-gray-50 rounded-xl text-[11px] font-black text-gray-500 uppercase tracking-tighter hover:bg-indigo-50 hover:text-[#4B0082] transition">#{{ $cat->category }}</a>
+                            <a href="{{ route('posts.index', ['category' => $cat->id]) }}" class="px-4 py-2 bg-gray-50 rounded-xl text-[11px] font-black text-gray-500 uppercase tracking-tighter hover:bg-indigo-50 hover:text-[#4B0082] transition">#{{ $cat->name }}</a>
                         @endforeach
                     </div>
                 </div>
