@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
-use App\Models\Category; // Added this import
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Intervention\Image\Laravel\Facades\Image;
+use Illuminate\Http\RedirectResponse;
 
 class PostController extends Controller
 {
@@ -66,7 +67,7 @@ class PostController extends Controller
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'content'     => 'required|string',
-            'category_id' => 'nullable|exists:categories,id', // Changed from category
+            'category_id' => 'nullable|exists:categories,id',
             'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
@@ -97,7 +98,7 @@ class PostController extends Controller
     {
         $post->load([
             'user', 
-            'category', // Added category relationship
+            'category',
             'likes', 
             'comments.user', 
             'comments.likes'
@@ -106,7 +107,7 @@ class PostController extends Controller
         $post->increment('views');
 
         $latestPosts = Post::latest()->take(5)->get();
-        $categories = Category::orderBy('name')->get(); // Updated
+        $categories = Category::orderBy('name')->get();
 
         return view('posts.show', compact('post', 'latestPosts', 'categories'));
     }
@@ -117,7 +118,7 @@ class PostController extends Controller
     public function edit(Post $post)
     {
         $this->authorize('update', $post);
-        $categories = Category::orderBy('name')->get(); // Pass categories to edit
+        $categories = Category::orderBy('name')->get();
         
         return view('posts.edit', compact('post', 'categories'));
     }
@@ -132,7 +133,7 @@ class PostController extends Controller
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'content'     => 'required|string',
-            'category_id' => 'required|exists:categories,id', // Changed from category
+            'category_id' => 'required|exists:categories,id',
             'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
@@ -158,6 +159,9 @@ class PostController extends Controller
         return redirect()->route('posts.index')->with('success', 'Post updated.');
     }
 
+    /**
+     * Remove the post from storage.
+     */
     public function destroy(Post $post)
     {
         $this->authorize('delete', $post);
@@ -169,5 +173,21 @@ class PostController extends Controller
         $post->delete();
 
         return redirect()->route('posts.index')->with('success', 'Post deleted.');
+    }
+
+    /**
+     * Toggle the featured status of a post.
+     */
+    public function toggleFeature(Post $post): RedirectResponse
+    {
+        $this->authorize('update', $post);
+
+        $post->update([
+            'is_featured' => ! $post->is_featured
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('success', $post->is_featured ? 'Post marked as featured!' : 'Post removed from featured.');
     }
 }
