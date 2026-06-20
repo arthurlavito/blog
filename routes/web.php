@@ -3,11 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthorRequestController;
+use Spatie\Sitemap\Sitemap;
+use Spatie\Sitemap\Tags\Url;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +21,27 @@ Route::get('/', [PostController::class, 'index'])->name('home');
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
 Route::view('/about', 'pages.about')->name('about');
-Route::view('/contact', 'pages.contact')->name('contact');
+Route::get('/contact', fn () => view('pages.contact'))->name('contact');
+Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
+
+Route::get('/sitemap.xml', function () {
+    $sitemap = Sitemap::create()
+        ->add(Url::create('/')->setPriority(1.0)->setChangeFrequency('daily'));
+
+    \App\Models\Post::published()
+        ->latest('updated_at')
+        ->get()
+        ->each(function ($post) use ($sitemap) {
+            $sitemap->add(
+                Url::create(route('posts.show', $post))
+                    ->setLastModificationDate($post->updated_at)
+                    ->setPriority(0.8)
+                    ->setChangeFrequency('weekly')
+            );
+        });
+
+    return $sitemap->renderResponse();
+})->name('sitemap');
 
 /*
 |--------------------------------------------------------------------------

@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
-@section('title', $post->title)
+@section('title', $post->title . ' | Anim24')
+@section('meta_description', \Illuminate\Support\Str::limit(strip_tags($post->content), 160))
+@section('canonical', route('posts.show', $post))
+@section('og_title', $post->title)
+@section('og_image', $post->image ? asset('storage/'.$post->image) : asset('images/logo.png'))
+@section('og_type', 'article')
 
 @section('content')
 <div class="py-10 bg-gray-50/50 min-h-screen">
@@ -14,8 +19,9 @@
                     {{-- Featured Image --}}
                     @if($post->image)
                         <div class="relative h-96 w-full">
-                            <img src="{{ asset('storage/'.$post->image) }}" 
-                                 alt="{{ $post->title }}" 
+                            <img src="{{ asset('storage/'.$post->image) }}"
+                                 alt="{{ $post->title }}"
+                                 loading="lazy"
                                  class="w-full h-full object-cover">
                             <div class="absolute top-6 left-6">
                                 <span class="px-4 py-2 bg-[#4B0082] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg">
@@ -33,8 +39,9 @@
 
                         {{-- Metadata --}}
                         <div class="flex items-center gap-4 mb-10 pb-8 border-b border-gray-50">
-                            <img class="h-10 w-10 rounded-full border-2 border-indigo-100" 
-                                 src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&background=4B0082&color=fff&bold=true">
+                            <img class="h-10 w-10 rounded-full border-2 border-indigo-100"
+                                 src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&background=4B0082&color=fff&bold=true"
+                                 alt="" loading="lazy">
                             <div>
                                 <p class="text-sm font-black text-gray-800 leading-none">{{ $post->user->name }}</p>
                                 <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
@@ -121,7 +128,7 @@
                             <form action="{{ route('comments.store', $post) }}" method="POST">
                                 @csrf
                                 <div class="flex gap-4">
-                                    <img class="h-10 w-10 rounded-full hidden md:block" src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=4B0082&color=fff&bold=true">
+                                    <img class="h-10 w-10 rounded-full hidden md:block" src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=4B0082&color=fff&bold=true" alt="" loading="lazy">
                                     <div class="flex-1 space-y-4">
                                         <textarea name="body" rows="3" required placeholder="What are your thoughts?" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-[#4B0082] transition placeholder-gray-400"></textarea>
                                         <div class="flex justify-end">
@@ -138,7 +145,7 @@
                         @forelse($post->comments as $comment)
                             <div class="bg-white p-4 rounded-3xl border border-gray-50 shadow-sm transition-all hover:border-indigo-100">
                                 <div class="flex items-start gap-3">
-                                    <img class="h-8 w-8 rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode($comment->user->name) }}&background=f3f4f6&color=4B0082&bold=true">
+                                    <img class="h-8 w-8 rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode($comment->user->name) }}&background=f3f4f6&color=4B0082&bold=true" alt="" loading="lazy">
                                     
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between mb-1">
@@ -231,3 +238,33 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script type="application/ld+json">
+{
+  "@@context": "https://schema.org",
+  "@@type": "NewsArticle",
+  "headline": "{{ e($post->title) }}",
+  "image": ["{{ $post->image ? asset('storage/'.$post->image) : asset('images/logo.png') }}"],
+  "datePublished": "{{ $post->created_at->toIso8601String() }}",
+  "dateModified": "{{ $post->updated_at->toIso8601String() }}",
+  "author": {
+    "@@type": "Person",
+    "name": "{{ e($post->user->name) }}"
+  },
+  "publisher": {
+    "@@type": "Organization",
+    "name": "Anim24",
+    "logo": {
+      "@@type": "ImageObject",
+      "url": "{{ asset('images/logo.png') }}"
+    }
+  },
+  "description": "{{ \Illuminate\Support\Str::limit(strip_tags($post->content), 160) }}",
+  "mainEntityOfPage": {
+    "@@type": "WebPage",
+    "@@id": "{{ route('posts.show', $post) }}"
+  }
+}
+</script>
+@endpush

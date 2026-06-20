@@ -58,6 +58,15 @@ class Post extends Model
     }
 
     /**
+     * Scope: only posts with status = 0 (published/live).
+     * status defaults to 0 on creation — 0 = live, anything else = unlisted/draft.
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('status', 0);
+    }
+
+    /**
      * Scope for searching and filtering
      */
     public function scopeFilter(Builder $query, array $filters)

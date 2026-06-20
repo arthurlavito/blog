@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Intervention\Image\Laravel\Facades\Image;
@@ -20,26 +21,30 @@ class PostController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Get the latest featured post (Eager load category)
-        $featuredPost = Post::with('user', 'category')
-            ->where('is_featured', true)
-            ->latest()
-            ->first();
+        // 1. Get the latest featured post (cached 10 min)
+        $featuredPost = Cache::remember('featured_post', 600, fn () =>
+            Post::with('user', 'category')
+                ->published()
+                ->where('is_featured', true)
+                ->latest()
+                ->first()
+        );
 
-        // 2. Get the paginated posts (excluding featured)
-        $posts = Post::with(['user', 'category', 'likes']) 
-            ->when($featuredPost, function ($query) use ($featuredPost) {
-                return $query->where('id', '!=', $featuredPost->id);
-            })
+        // 2. Get the paginated posts (excluding featured, published only)
+        $posts = Post::with(['user', 'category', 'likes'])
+            ->published()
+            ->when($featuredPost, fn ($q) => $q->where('id', '!=', $featuredPost->id))
             ->latest()
-            ->filter($request->only(['search', 'category'])) 
+            ->filter($request->only(['search', 'category']))
             ->paginate(6)
             ->withQueryString();
 
-        // 3. Fetch from Category Model (Fixes the SQL error)
-        $categories = Category::orderBy('name')->get();
+        // 3. Categories (cached 1 hour)
+        $categories = Cache::remember('nav_categories', 3600, fn () =>
+            Category::orderBy('name')->get()
+        );
 
-        $latestPosts = Post::latest()->take(5)->get();
+        $latestPosts = Post::published()->latest()->take(5)->get();
 
         return view('posts.index', compact('posts', 'featuredPost', 'categories', 'latestPosts'));
     }
@@ -50,9 +55,10 @@ class PostController extends Controller
     public function create()
     {
         $this->authorize('create', Post::class);
-        
-        // Need to pass categories to the create form dropdown
-        $categories = Category::orderBy('name')->get();
+
+        $categories = Cache::remember('nav_categories', 3600, fn () =>
+            Category::orderBy('name')->get()
+        );
 
         return view('posts.create', compact('categories'));
     }
@@ -88,6 +94,9 @@ class PostController extends Controller
 
         Post::create($validated);
 
+        Cache::forget('featured_post');
+        Cache::forget('nav_categories');
+
         return redirect()->route('dashboard')->with('success', 'Post published!');
     }
 
@@ -106,8 +115,10 @@ class PostController extends Controller
 
         $post->increment('views');
 
-        $latestPosts = Post::latest()->take(5)->get();
-        $categories = Category::orderBy('name')->get();
+        $latestPosts = Post::published()->latest()->take(5)->get();
+        $categories = Cache::remember('nav_categories', 3600, fn () =>
+            Category::orderBy('name')->get()
+        );
 
         return view('posts.show', compact('post', 'latestPosts', 'categories'));
     }
@@ -118,8 +129,10 @@ class PostController extends Controller
     public function edit(Post $post)
     {
         $this->authorize('update', $post);
-        $categories = Category::orderBy('name')->get();
-        
+        $categories = Cache::remember('nav_categories', 3600, fn () =>
+            Category::orderBy('name')->get()
+        );
+
         return view('posts.edit', compact('post', 'categories'));
     }
 
@@ -155,6 +168,9 @@ class PostController extends Controller
         }
 
         $post->update($validated);
+
+        Cache::forget('featured_post');
+        Cache::forget('nav_categories');
 
         return redirect()->route('posts.index')->with('success', 'Post updated.');
     }

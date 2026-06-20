@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'google' => [
+        'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
+        'analytics_id'      => env('GOOGLE_ANALYTICS_ID'),
+        'adsense_client_id' => env('GOOGLE_ADSENSE_CLIENT_ID'),
+    ],
+
 ];

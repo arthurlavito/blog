@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Privacy Policy | ' . config('app.name', 'Anim24.com'))
+@section('title', 'Privacy Policy | Anim24')
+@section('meta_description', 'Read the Anim24 Privacy Policy — how we collect, use, and protect your personal information when you use our news platform.')
+@section('canonical', route('privacy-policy'))
 
 @section('content')
 <article class="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 sm:p-10 lg:p-14">

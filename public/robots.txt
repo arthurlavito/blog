@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /profile
+Disallow: /login
+Disallow: /register
+Disallow: /password
+
+Sitemap: https://anim24.com/sitemap.xml

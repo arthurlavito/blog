@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'About | ' . config('app.name', 'Anim24.com'))
+@section('title', 'About | Anim24 — Decentralized Global News Platform')
+@section('meta_description', 'Learn about Anim24: an open-access global news and analysis platform delivering unfiltered breaking coverage and investigative insights from a decentralized network of voices.')
+@section('canonical', route('about'))
 
 @section('content')
 <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">

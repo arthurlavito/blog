@@ -1,5 +1,13 @@
 @extends('layouts.app')
 
+@section('title', request('search')
+    ? 'Search: "' . request('search') . '" | Anim24'
+    : (request('category')
+        ? (optional(\App\Models\Category::find(request('category')))->name . ' News | Anim24')
+        : 'Breaking News & Global Analysis | Anim24'))
+@section('meta_description', 'Latest breaking news, anime, sports and global analysis from Anim24.')
+@section('canonical', route('posts.index'))
+
 @section('content')
 <div class="py-12 bg-gray-50/50 min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,8 +55,8 @@
                 All News
             </a>
 
-            @foreach(\App\Models\Category::all() as $cat)
-                <a href="{{ route('posts.index', ['category' => $cat->id]) }}" 
+            @foreach($categories as $cat)
+                <a href="{{ route('posts.index', ['category' => $cat->id]) }}"
                    class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
                    {{ request('category') == $cat->id ? 'bg-[#4B0082] text-white shadow-lg shadow-indigo-100' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50' }}">
                     {{ $cat->name }}
@@ -61,7 +69,7 @@
         <div class="mb-16 relative group">
             <div class="relative h-[500px] w-full overflow-hidden rounded-[3rem] shadow-2xl">
                 @if($featuredPost->image)
-                    <img src="{{ asset('storage/' . $featuredPost->image) }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
+                    <img src="{{ asset('storage/' . $featuredPost->image) }}" alt="{{ $featuredPost->title }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-700">
                 @else
                     <div class="w-full h-full bg-slate-900 flex items-center justify-center">
                         <span class="text-white/10 font-black text-9xl">ANIM24</span>
@@ -91,7 +99,7 @@
                     
                     <div class="relative h-64 overflow-hidden">
                         @if($post->image)
-                            <img src="{{ asset('storage/' . $post->image) }}" alt="{{ $post->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <img src="{{ asset('storage/' . $post->image) }}" alt="{{ $post->title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         @else
                             <div class="w-full h-full bg-indigo-50 flex items-center justify-center">
                                 <span class="text-[#4B0082] font-black text-4xl opacity-20">ANIM24</span>

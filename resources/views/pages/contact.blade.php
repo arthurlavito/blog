@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Contact | ' . config('app.name', 'Anim24.com'))
+@section('title', 'Contact Anim24 — Send Tips, Feedback & Enquiries')
+@section('meta_description', 'Reach out to Anim24 with news tips, editorial corrections, author access requests, partnership enquiries, or general support messages.')
+@section('canonical', route('contact'))
 
 @section('content')
 <div class="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
@@ -28,31 +30,43 @@
     </section>
 
     <section class="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 sm:p-10">
-        <form action="mailto:contact@anim24.com" method="POST" enctype="text/plain" class="space-y-6">
+
+        @if(session('success'))
+            <div class="mb-6 px-6 py-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-sm font-bold">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <form action="{{ route('contact.send') }}" method="POST" class="space-y-6">
+            @csrf
+
             <div>
                 <label for="name" class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Name</label>
-                <input id="name" name="name" type="text" class="w-full rounded-2xl border-gray-200 focus:border-[#4B0082] focus:ring-[#4B0082]" required>
+                <input id="name" name="name" type="text" value="{{ old('name') }}" class="w-full rounded-2xl border-gray-200 focus:border-[#4B0082] focus:ring-[#4B0082]" required>
+                @error('name')<p class="mt-1 text-[10px] font-bold text-rose-500">{{ $message }}</p>@enderror
             </div>
 
             <div>
                 <label for="email" class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Email</label>
-                <input id="email" name="email" type="email" class="w-full rounded-2xl border-gray-200 focus:border-[#4B0082] focus:ring-[#4B0082]" required>
+                <input id="email" name="email" type="email" value="{{ old('email') }}" class="w-full rounded-2xl border-gray-200 focus:border-[#4B0082] focus:ring-[#4B0082]" required>
+                @error('email')<p class="mt-1 text-[10px] font-bold text-rose-500">{{ $message }}</p>@enderror
             </div>
 
             <div>
                 <label for="topic" class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Topic</label>
                 <select id="topic" name="topic" class="w-full rounded-2xl border-gray-200 focus:border-[#4B0082] focus:ring-[#4B0082]">
-                    <option>General question</option>
-                    <option>News tip</option>
-                    <option>Correction</option>
-                    <option>Author request</option>
-                    <option>Partnership</option>
+                    <option {{ old('topic') === 'General question' ? 'selected' : '' }}>General question</option>
+                    <option {{ old('topic') === 'News tip' ? 'selected' : '' }}>News tip</option>
+                    <option {{ old('topic') === 'Correction' ? 'selected' : '' }}>Correction</option>
+                    <option {{ old('topic') === 'Author request' ? 'selected' : '' }}>Author request</option>
+                    <option {{ old('topic') === 'Partnership' ? 'selected' : '' }}>Partnership</option>
                 </select>
             </div>
 
             <div>
                 <label for="message" class="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Message</label>
-                <textarea id="message" name="message" rows="7" class="w-full rounded-2xl border-gray-200 focus:border-[#4B0082] focus:ring-[#4B0082]" required></textarea>
+                <textarea id="message" name="message" rows="7" class="w-full rounded-2xl border-gray-200 focus:border-[#4B0082] focus:ring-[#4B0082]" required>{{ old('message') }}</textarea>
+                @error('message')<p class="mt-1 text-[10px] font-bold text-rose-500">{{ $message }}</p>@enderror
             </div>
 
             <button type="submit" class="inline-flex items-center justify-center px-8 py-4 rounded-2xl bg-[#4B0082] text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition">
