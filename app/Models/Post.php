@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
+use App\Observers\PostObserver;
 
+#[ObservedBy(PostObserver::class)]
 class Post extends Model
 {
     use HasFactory;

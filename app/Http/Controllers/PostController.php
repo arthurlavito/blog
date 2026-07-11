@@ -94,7 +94,6 @@ class PostController extends Controller
 
         Post::create($validated);
 
-        Cache::forget('featured_post');
         Cache::forget('nav_categories');
 
         return redirect()->route('dashboard')->with('success', 'Post published!');
@@ -169,7 +168,6 @@ class PostController extends Controller
 
         $post->update($validated);
 
-        Cache::forget('featured_post');
         Cache::forget('nav_categories');
 
         return redirect()->route('posts.index')->with('success', 'Post updated.');
