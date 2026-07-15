@@ -19,6 +19,7 @@ use Spatie\Sitemap\Tags\Url;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [PostController::class, 'index'])->name('home');
+Route::feeds();
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::view('/privacy-policy', 'pages.privacy-policy')->name('privacy-policy');
 Route::view('/about', 'pages.about')->name('about');

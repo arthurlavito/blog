@@ -1,8 +1,11 @@
 @extends('layouts.app')
 
-@section('title', $post->title . ' | Anim24')
-@section('meta_description', \Illuminate\Support\Str::words(strip_tags($post->content), 28, '…'))
-@section('canonical', route('posts.show', $post))
+@section('title', ($post->meta_title ?: $post->title) . ' | Anim24')
+@section('meta_description', $post->meta_description ?: \Illuminate\Support\Str::words(strip_tags($post->content), 28, '…'))
+@section('canonical', $post->canonical_url ?: route('posts.show', $post))
+@if($post->noindex)
+@section('robots', 'noindex,follow')
+@endif
 @section('og_title', $post->title)
 @section('og_image', $post->image ? asset('storage/'.$post->image) : asset('images/logo.png'))
 @section('og_type', 'article')
@@ -279,7 +282,7 @@
       "url": "{{ asset('images/logo.png') }}"
     }
   },
-  "description": "{{ e(\Illuminate\Support\Str::words(strip_tags($post->content), 28, '…')) }}",
+  "description": "{{ e($post->meta_description ?: \Illuminate\Support\Str::words(strip_tags($post->content), 28, '…')) }}",
   "mainEntityOfPage": {
     "@@type": "WebPage",
     "@@id": "{{ route('posts.show', $post) }}"

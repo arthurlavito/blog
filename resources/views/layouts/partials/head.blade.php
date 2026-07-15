@@ -3,9 +3,13 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', config('app.name', 'Anim24') . ' — Breaking Global News & Analysis')</title>
 
-<!-- SEO: Description & Canonical -->
+<!-- SEO: Description, Canonical, Robots -->
 <meta name="description" content="@yield('meta_description', 'Anim24 — Breaking global news, anime, sports, and analysis.')">
 <link rel="canonical" href="@yield('canonical', url()->current())">
+@hasSection('robots')
+<meta name="robots" content="@yield('robots')">
+@endif
+<link rel="alternate" type="application/rss+xml" title="Anim24 News Feed" href="{{ url('/feed.xml') }}">
 
 <!-- Open Graph -->
 <meta property="og:title" content="@yield('og_title', config('app.name', 'Anim24'))">

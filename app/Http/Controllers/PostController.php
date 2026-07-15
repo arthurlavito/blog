@@ -80,14 +80,20 @@ class PostController extends Controller
         $this->authorize('create', Post::class);
 
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'content'     => 'required|string',
-            'category_id' => 'nullable|exists:categories,id',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'title'            => 'required|string|max:255',
+            'content'          => 'required|string',
+            'category_id'      => 'nullable|exists:categories,id',
+            'image'            => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'meta_title'       => 'nullable|string|max:70',
+            'meta_description' => 'nullable|string|max:160',
+            'focus_keyword'    => 'nullable|string|max:100',
+            'canonical_url'    => 'nullable|url|max:500',
+            'noindex'          => 'boolean',
         ]);
 
-        $validated['user_id'] = auth()->id();
-        $validated['content'] = app(ContentSanitizer::class)->sanitize($validated['content']);
+        $validated['noindex']  = $request->boolean('noindex');
+        $validated['user_id']  = auth()->id();
+        $validated['content']  = app(ContentSanitizer::class)->sanitize($validated['content']);
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
@@ -154,12 +160,18 @@ class PostController extends Controller
         $this->authorize('update', $post);
 
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'content'     => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'title'            => 'required|string|max:255',
+            'content'          => 'required|string',
+            'category_id'      => 'required|exists:categories,id',
+            'image'            => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'meta_title'       => 'nullable|string|max:70',
+            'meta_description' => 'nullable|string|max:160',
+            'focus_keyword'    => 'nullable|string|max:100',
+            'canonical_url'    => 'nullable|url|max:500',
+            'noindex'          => 'boolean',
         ]);
 
+        $validated['noindex'] = $request->boolean('noindex');
         $validated['content'] = app(ContentSanitizer::class)->sanitize($validated['content']);
 
         if ($request->hasFile('image')) {
