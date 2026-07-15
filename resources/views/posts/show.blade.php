@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $post->title . ' | Anim24')
-@section('meta_description', \Illuminate\Support\Str::limit(strip_tags($post->content), 160))
+@section('meta_description', \Illuminate\Support\Str::words(strip_tags($post->content), 28, '…'))
 @section('canonical', route('posts.show', $post))
 @section('og_title', $post->title)
 @section('og_image', $post->image ? asset('storage/'.$post->image) : asset('images/logo.png'))
@@ -50,9 +50,9 @@
                             </div>
                         </div>
 
-                        {{-- Body Content --}}
-                        <div class="text-gray-700 leading-relaxed text-lg font-medium space-y-6 mb-12">
-                            {!! nl2br(e($post->content)) !!}
+                        {{-- Body Content — already purified by ContentSanitizer on save --}}
+                        <div class="post-body mb-12">
+                            {!! $post->content !!}
                         </div>
 
                         {{-- ================= POST HYPE BAR ================= --}}
@@ -260,7 +260,7 @@
       "url": "{{ asset('images/logo.png') }}"
     }
   },
-  "description": "{{ \Illuminate\Support\Str::limit(strip_tags($post->content), 160) }}",
+  "description": "{{ e(\Illuminate\Support\Str::words(strip_tags($post->content), 28, '…')) }}",
   "mainEntityOfPage": {
     "@@type": "WebPage",
     "@@id": "{{ route('posts.show', $post) }}"

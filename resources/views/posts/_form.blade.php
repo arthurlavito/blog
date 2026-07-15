@@ -3,6 +3,52 @@
     $isEdit = isset($post) && $post->exists;
 @endphp
 
+@push('head')
+<link rel="stylesheet" href="https://unpkg.com/trix@2.1.12/dist/trix.css">
+@endpush
+
+@push('scripts')
+<script src="https://unpkg.com/trix@2.1.12/dist/trix.umd.min.js"></script>
+<script>
+// Register h2 and h3 as first-class block types before Trix boots.
+// "heading1" is Trix's built-in; we replace it with heading2 + heading3
+// so the article body never accidentally contains an <h1>.
+document.addEventListener("trix-before-initialize", () => {
+    delete Trix.config.blockAttributes.heading1;
+
+    Trix.config.blockAttributes.heading2 = {
+        tagName: "h2", terminal: true, breakOnReturn: true, group: false
+    };
+    Trix.config.blockAttributes.heading3 = {
+        tagName: "h3", terminal: true, breakOnReturn: true, group: false
+    };
+});
+
+document.addEventListener("trix-initialize", ({ target: editor }) => {
+    const toolbar = editor.toolbarElement;
+
+    // Remove the built-in H1 button that shipped with Trix
+    toolbar.querySelector('[data-trix-attribute="heading1"]')?.remove();
+
+    // Insert H2 / H3 buttons at the start of the block-tools group
+    const blockGroup = toolbar.querySelector('[data-trix-button-group="block-tools"]');
+    if (blockGroup) {
+        blockGroup.insertAdjacentHTML('afterbegin', `
+            <button type="button" class="trix-button" data-trix-attribute="heading3"
+                    title="Heading 3" tabindex="-1">H3</button>
+            <button type="button" class="trix-button" data-trix-attribute="heading2"
+                    title="Heading 2" tabindex="-1">H2</button>
+        `);
+    }
+
+    // Disable Trix's built-in file attachment to avoid needing an upload endpoint.
+    // Image embedding via URL is handled by the link tool — paste a direct image URL
+    // and wrap it in an <img> tag via the HTML editor in Phase 10.
+    editor.addEventListener("trix-file-accept", e => e.preventDefault());
+});
+</script>
+@endpush
+
 {{-- 
     Dynamic Form Header: 
     - POST to 'store' for new posts
@@ -82,16 +128,21 @@
         </div>
     @endif
 
-    {{-- Content Textarea --}}
+    {{-- Rich-text editor (Trix) --}}
     <div>
         <label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Article Content</label>
-        <textarea name="content" 
-                  rows="12" 
-                  required
-                  class="w-full bg-gray-50 border-none rounded-[2rem] px-6 py-5 text-sm focus:ring-2 focus:ring-[#4B0082] transition shadow-sm leading-relaxed"
-                  placeholder="Tell your story here...">{{ old('content', $post->content ?? '') }}</textarea>
-        @error('content') 
-            <p class="text-rose-500 text-[10px] mt-2 font-bold uppercase italic tracking-wider">{{ $message }}</p> 
+
+        {{-- Hidden input carries the value; Trix syncs to it on every change --}}
+        <input type="hidden" id="post-content" name="content"
+               value="{{ old('content', $post->content ?? '') }}">
+
+        <trix-editor input="post-content"
+                     class="trix-content rounded-[2rem] bg-gray-50 border border-gray-200 px-4 py-4 text-sm min-h-[28rem] focus:ring-2 focus:ring-[#4B0082]"
+                     placeholder="Tell your story here...">
+        </trix-editor>
+
+        @error('content')
+            <p class="text-rose-500 text-[10px] mt-2 font-bold uppercase italic tracking-wider">{{ $message }}</p>
         @enderror
     </div>
 
