@@ -58,6 +58,52 @@
 </div>
 @endif
 
+{{-- Pending Comments Queue --}}
+@php $pendingComments = \App\Models\Comment::with(['user', 'post'])->pending()->latest()->take(10)->get(); @endphp
+@if($pendingComments->isNotEmpty())
+<div class="bg-blue-50 border border-blue-100 rounded-[2.5rem] p-8 mb-8">
+    <h3 class="font-black text-blue-800 uppercase tracking-widest text-xs mb-4">
+        Comments Awaiting Moderation — {{ $pendingComments->count() }}
+    </h3>
+    <div class="space-y-3">
+        @foreach($pendingComments as $comment)
+            <div class="bg-white rounded-2xl px-5 py-4 border border-blue-100">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[10px] text-gray-400 font-bold mb-1">
+                            <span class="text-gray-700 font-black">{{ $comment->user->name ?? '—' }}</span>
+                            on <a href="{{ route('posts.show', $comment->post) }}" class="text-indigo-500 hover:underline">{{ $comment->post->title ?? '—' }}</a>
+                            · {{ $comment->created_at->diffForHumans() }}
+                        </p>
+                        <p class="text-sm text-gray-700 line-clamp-2">{{ $comment->body }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <form action="{{ route('admin.comments.approve', $comment) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="px-3 py-1.5 text-[9px] font-black uppercase rounded-lg bg-emerald-100 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition-all">
+                                Approve
+                            </button>
+                        </form>
+                        <form action="{{ route('admin.comments.spam', $comment) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="px-3 py-1.5 text-[9px] font-black uppercase rounded-lg bg-orange-50 text-orange-500 border border-orange-100 hover:bg-orange-500 hover:text-white transition-all">
+                                Spam
+                            </button>
+                        </form>
+                        <form action="{{ route('admin.comments.trash', $comment) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="px-3 py-1.5 text-[9px] font-black uppercase rounded-lg bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all">
+                                Trash
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
 {{-- Quick Management Section --}}
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
     

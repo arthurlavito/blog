@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -9,7 +10,22 @@ class Comment extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'post_id', 'body'];
+    public const STATUS_PENDING  = 'pending';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_SPAM     = 'spam';
+    public const STATUS_TRASHED  = 'trashed';
+
+    protected $fillable = ['user_id', 'post_id', 'parent_id', 'body', 'status'];
+
+    public function scopeApproved(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_APPROVED);
+    }
+
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_PENDING);
+    }
 
     public function user()
     {
@@ -21,9 +37,16 @@ class Comment extends Model
         return $this->belongsTo(Post::class);
     }
 
-    /**
-     * Relationship: MorphMany for Likes.
-     */
+    public function parent()
+    {
+        return $this->belongsTo(Comment::class, 'parent_id');
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(Comment::class, 'parent_id')->approved()->with('user')->latest();
+    }
+
     public function likes()
     {
         return $this->morphMany(Like::class, 'likeable');

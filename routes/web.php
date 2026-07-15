@@ -101,6 +101,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/posts/{post}/publish', [PostController::class, 'publishPost'])->name('posts.publish');
             Route::post('/posts/{post}/reject',  [PostController::class, 'rejectPost'])->name('posts.reject');
 
+            // Comment moderation
+            Route::post('/comments/{comment}/approve', [CommentController::class, 'approve'])->name('comments.approve');
+            Route::post('/comments/{comment}/spam',    [CommentController::class, 'spam'])->name('comments.spam');
+            Route::post('/comments/{comment}/trash',   [CommentController::class, 'trash'])->name('comments.trash');
+
             // User Management
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

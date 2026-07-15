@@ -122,9 +122,14 @@ class Post extends Model implements Feedable
         return $this->belongsTo(User::class); 
     }
 
-    public function comments() 
-    { 
-        return $this->hasMany(Comment::class)->latest(); 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class)->approved()->latest();
+    }
+
+    public function allComments()
+    {
+        return $this->hasMany(Comment::class)->latest();
     }
 
     public function likes()
