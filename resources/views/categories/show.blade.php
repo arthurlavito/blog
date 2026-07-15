@@ -8,6 +8,12 @@
 <div class="py-12 bg-gray-50/50 min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
+        {{-- Breadcrumbs --}}
+        <x-breadcrumbs :items="[
+            ['label' => 'Home',              'url' => route('home')],
+            ['label' => $category->name,     'url' => route('categories.show', $category)],
+        ]" />
+
         {{-- Header --}}
         <div class="mb-12">
             <p class="text-[10px] font-black uppercase tracking-[0.3em] text-[#4B0082] mb-2">Category</p>
