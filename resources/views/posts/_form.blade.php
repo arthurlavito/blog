@@ -277,12 +277,33 @@ document.addEventListener("trix-initialize", ({ target: editor }) => {
 
     {{-- Form Actions --}}
     <div class="pt-6 flex flex-col md:flex-row items-center gap-4">
-        <button type="submit" 
+        <button type="submit"
                 class="w-full md:w-auto px-12 py-4 bg-[#4B0082] text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-900 transition-all shadow-xl shadow-indigo-100 active:scale-95">
-            {{ $isEdit ? 'Update Masterpiece' : 'Publish Article' }}
+            @if(auth()->user()->isAdmin())
+                {{ $isEdit ? 'Update &amp; Publish' : 'Publish Article' }}
+            @else
+                {{ $isEdit ? 'Save Draft' : 'Save as Draft' }}
+            @endif
         </button>
 
-        <a href="{{ $isEdit ? route('posts.show', $post) : route('posts.index') }}" 
+        {{-- Authors: submit draft for admin review --}}
+        @if($isEdit && !auth()->user()->isAdmin())
+            @if(($post->status ?? \App\Models\Post::STATUS_DRAFT) === \App\Models\Post::STATUS_DRAFT)
+                <form action="{{ route('posts.submit', $post) }}" method="POST" class="w-full md:w-auto">
+                    @csrf
+                    <button type="submit"
+                            class="w-full px-10 py-4 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-100 active:scale-95">
+                        Submit for Review
+                    </button>
+                </form>
+            @elseif(($post->status ?? 0) === \App\Models\Post::STATUS_PENDING)
+                <span class="px-6 py-4 bg-amber-50 border border-amber-200 text-amber-700 rounded-2xl font-black text-xs uppercase tracking-widest">
+                    Pending Review
+                </span>
+            @endif
+        @endif
+
+        <a href="{{ $isEdit ? route('posts.show', $post) : route('posts.index') }}"
            class="w-full md:w-auto px-8 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-gray-200 transition-all text-center">
             Discard Changes
         </a>
