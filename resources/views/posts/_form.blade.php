@@ -68,9 +68,10 @@ document.addEventListener("trix-initialize", ({ target: editor }) => {
     {{-- Title Input --}}
     <div>
         <label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Article Title</label>
-        <input type="text" 
-               name="title" 
-               value="{{ old('title', $post->title ?? '') }}" 
+        <input type="text"
+               id="article-title"
+               name="title"
+               value="{{ old('title', $post->title ?? '') }}"
                required
                class="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#4B0082] transition shadow-sm"
                placeholder="Enter a catchy headline...">
@@ -145,6 +146,134 @@ document.addEventListener("trix-initialize", ({ target: editor }) => {
             <p class="text-rose-500 text-[10px] mt-2 font-bold uppercase italic tracking-wider">{{ $message }}</p>
         @enderror
     </div>
+
+    {{-- ── SEO Panel ─────────────────────────────────────────────────────── --}}
+    <details class="group rounded-[2rem] bg-gray-50 border border-gray-200 overflow-hidden"
+             {{ $errors->hasAny(['meta_title','meta_description','focus_keyword','canonical_url']) ? 'open' : '' }}>
+        <summary class="flex items-center justify-between px-8 py-5 cursor-pointer select-none list-none">
+            <span class="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-3">
+                <svg class="w-4 h-4 text-[#4B0082]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                SEO Settings
+            </span>
+            <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </summary>
+
+        <div class="px-8 pb-8 space-y-6 border-t border-gray-200 pt-6"
+             x-data="{
+                 metaTitle: '{{ addslashes(old('meta_title', $post->meta_title ?? '')) }}',
+                 metaDesc:  '{{ addslashes(old('meta_description', $post->meta_description ?? '')) }}',
+                 postTitle: '',
+                 get serpTitle() {
+                     const t = this.metaTitle || this.postTitle || 'Post Title';
+                     return t.length > 70 ? t.slice(0, 67) + '...' : t;
+                 },
+                 get serpDesc() {
+                     if (!this.metaDesc) return 'No meta description — Google will auto-generate one from your content.';
+                     return this.metaDesc.length > 160 ? this.metaDesc.slice(0, 157) + '...' : this.metaDesc;
+                 }
+             }"
+             x-init="
+                 const titleEl = document.getElementById('article-title');
+                 if (titleEl) {
+                     postTitle = titleEl.value;
+                     titleEl.addEventListener('input', e => postTitle = e.target.value);
+                 }
+             ">
+
+            {{-- SERP Preview --}}
+            <div class="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-3">Search Preview</p>
+                <div class="space-y-0.5">
+                    <p class="text-[10px] text-gray-400 truncate">anim24.com › posts › ...</p>
+                    <p class="text-[#1a0dab] text-base font-medium leading-snug truncate" x-text="serpTitle"></p>
+                    <p class="text-[13px] text-gray-600 leading-snug line-clamp-2" x-text="serpDesc"></p>
+                </div>
+            </div>
+
+            {{-- Meta Title --}}
+            <div>
+                <div class="flex justify-between mb-2">
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400">Meta Title</label>
+                    <span class="text-[10px] font-bold"
+                          :class="metaTitle.length > 70 ? 'text-rose-500' : 'text-gray-400'"
+                          x-text="metaTitle.length + '/70'"></span>
+                </div>
+                <input type="text"
+                       name="meta_title"
+                       maxlength="70"
+                       x-model="metaTitle"
+                       value="{{ old('meta_title', $post->meta_title ?? '') }}"
+                       placeholder="Leave blank to use the article title"
+                       class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#4B0082] transition shadow-sm">
+                @error('meta_title')
+                    <p class="text-rose-500 text-[10px] mt-2 font-bold uppercase italic tracking-wider">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Meta Description --}}
+            <div>
+                <div class="flex justify-between mb-2">
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400">Meta Description</label>
+                    <span class="text-[10px] font-bold"
+                          :class="metaDesc.length > 160 ? 'text-rose-500' : metaDesc.length > 140 ? 'text-amber-500' : 'text-gray-400'"
+                          x-text="metaDesc.length + '/160'"></span>
+                </div>
+                <textarea name="meta_description"
+                          rows="3"
+                          maxlength="160"
+                          x-model="metaDesc"
+                          placeholder="Compelling summary that appears in search results (max 160 chars)"
+                          class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#4B0082] transition shadow-sm resize-none">{{ old('meta_description', $post->meta_description ?? '') }}</textarea>
+                @error('meta_description')
+                    <p class="text-rose-500 text-[10px] mt-2 font-bold uppercase italic tracking-wider">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- Focus Keyword --}}
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Focus Keyword</label>
+                    <input type="text"
+                           name="focus_keyword"
+                           maxlength="100"
+                           value="{{ old('focus_keyword', $post->focus_keyword ?? '') }}"
+                           placeholder="e.g. FIFA World Cup 2026"
+                           class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#4B0082] transition shadow-sm">
+                </div>
+
+                {{-- Canonical URL --}}
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Canonical URL</label>
+                    <input type="url"
+                           name="canonical_url"
+                           value="{{ old('canonical_url', $post->canonical_url ?? '') }}"
+                           placeholder="Leave blank — auto-generated"
+                           class="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-[#4B0082] transition shadow-sm">
+                    @error('canonical_url')
+                        <p class="text-rose-500 text-[10px] mt-2 font-bold uppercase italic tracking-wider">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            {{-- Noindex --}}
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="hidden" name="noindex" value="0">
+                <input type="checkbox"
+                       name="noindex"
+                       value="1"
+                       {{ old('noindex', $post->noindex ?? false) ? 'checked' : '' }}
+                       class="w-5 h-5 rounded text-[#4B0082] border-gray-300 focus:ring-[#4B0082]">
+                <span class="text-xs font-black uppercase tracking-widest text-gray-500">
+                    Exclude from search engines (noindex)
+                </span>
+            </label>
+        </div>
+    </details>
 
     {{-- Form Actions --}}
     <div class="pt-6 flex flex-col md:flex-row items-center gap-4">

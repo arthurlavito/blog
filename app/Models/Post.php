@@ -9,21 +9,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
 use App\Observers\PostObserver;
+use Spatie\Feed\Feedable;
+use Spatie\Feed\FeedItem;
 
 #[ObservedBy(PostObserver::class)]
-class Post extends Model
+class Post extends Model implements Feedable
 {
     use HasFactory;
 
     protected $fillable = [
-        'title', 
-        'slug', 
-        'content', 
-        'category_id', // Changed from 'category' to 'category_id'
-        'image', 
-        'user_id', 
+        'title',
+        'slug',
+        'content',
+        'category_id',
+        'image',
+        'user_id',
         'views',
-        'is_featured'  // Added for the homepage hero section
+        'is_featured',
+        'meta_title',
+        'meta_description',
+        'focus_keyword',
+        'canonical_url',
+        'noindex',
     ];
 
     /**
@@ -132,6 +139,28 @@ class Post extends Model
     public function getRouteKeyName()
     {
         return 'slug';
+    }
+
+    // ── RSS Feed ───────────────────────────────────────────────────────────
+
+    public static function getFeedItems()
+    {
+        return static::with('user')
+            ->published()
+            ->latest()
+            ->take(25)
+            ->get();
+    }
+
+    public function toFeedItem(): FeedItem
+    {
+        return FeedItem::create()
+            ->id(route('posts.show', $this))
+            ->title($this->meta_title ?: $this->title)
+            ->summary($this->meta_description ?: Str::words(strip_tags($this->content), 28, '…'))
+            ->updated($this->updated_at)
+            ->link(route('posts.show', $this))
+            ->authorName($this->user->name);
     }
 
 }
