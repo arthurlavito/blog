@@ -42,6 +42,13 @@
                     @endif
 
                     <div class="p-8 md:p-12">
+                        {{-- Breadcrumbs --}}
+                        <x-breadcrumbs :items="[
+                            ['label' => 'Home',                                                  'url' => route('home')],
+                            ['label' => $post->category->name ?? 'Uncategorized',                'url' => $post->category ? route('categories.show', $post->category) : route('home')],
+                            ['label' => \Illuminate\Support\Str::limit($post->title, 50),        'url' => route('posts.show', $post)],
+                        ]" />
+
                         {{-- Title --}}
                         <h1 class="text-4xl md:text-5xl font-black text-gray-900 leading-tight tracking-tighter mb-6">
                             {{ $post->title }}
@@ -262,31 +269,36 @@
 @endsection
 
 @push('scripts')
-<script type="application/ld+json">
-{
-  "@@context": "https://schema.org",
-  "@@type": "NewsArticle",
-  "headline": "{{ e($post->title) }}",
-  "image": ["{{ $post->image ? asset('storage/'.$post->image) : asset('images/logo.png') }}"],
-  "datePublished": "{{ $post->created_at->toIso8601String() }}",
-  "dateModified": "{{ $post->updated_at->toIso8601String() }}",
-  "author": {
-    "@@type": "Person",
-    "name": "{{ e($post->user->name) }}"
-  },
-  "publisher": {
-    "@@type": "Organization",
-    "name": "Anim24",
-    "logo": {
-      "@@type": "ImageObject",
-      "url": "{{ asset('images/logo.png') }}"
-    }
-  },
-  "description": "{{ e($post->meta_description ?: \Illuminate\Support\Str::words(strip_tags($post->content), 28, '…')) }}",
-  "mainEntityOfPage": {
-    "@@type": "WebPage",
-    "@@id": "{{ route('posts.show', $post) }}"
-  }
+@php
+use Illuminate\Support\Str;
+
+$keywords = collect();
+if ($post->tags->isNotEmpty()) {
+    $keywords = $post->tags->pluck('name');
 }
-</script>
+if ($post->focus_keyword) {
+    $keywords->push($post->focus_keyword);
+}
+
+$newsArticle = [
+    '@context'         => 'https://schema.org',
+    '@type'            => 'NewsArticle',
+    'headline'         => $post->meta_title ?: $post->title,
+    'image'            => [$post->image ? asset('storage/'.$post->image) : asset('images/logo.png')],
+    'datePublished'    => $post->created_at->toIso8601String(),
+    'dateModified'     => $post->updated_at->toIso8601String(),
+    'author'           => ['@type' => 'Person', 'name' => $post->user->name],
+    'publisher'        => ['@id' => config('app.url') . '/#organization'],
+    'description'      => $post->meta_description ?: Str::words(strip_tags($post->content), 28, '…'),
+    'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => route('posts.show', $post)],
+];
+
+if ($post->category) {
+    $newsArticle['articleSection'] = $post->category->name;
+}
+if ($keywords->isNotEmpty()) {
+    $newsArticle['keywords'] = $keywords->unique()->implode(', ');
+}
+@endphp
+<script type="application/ld+json">{!! json_encode($newsArticle, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endpush

@@ -56,35 +56,36 @@
 @endif
 
 <!-- Organization + WebSite Schema -->
-<script type="application/ld+json">
-{
-  "@@context": "https://schema.org",
-  "@@graph": [
-    {
-      "@@type": "Organization",
-      "@@id": "{{ config('app.url') }}/#organization",
-      "name": "Anim24",
-      "url": "{{ config('app.url') }}",
-      "logo": {
-        "@@type": "ImageObject",
-        "url": "{{ asset('images/logo.png') }}"
-      }
-    },
-    {
-      "@@type": "WebSite",
-      "@@id": "{{ config('app.url') }}/#website",
-      "url": "{{ config('app.url') }}",
-      "name": "Anim24",
-      "publisher": { "@@id": "{{ config('app.url') }}/#organization" },
-      "potentialAction": {
-        "@@type": "SearchAction",
-        "target": {
-          "@@type": "EntryPoint",
-          "urlTemplate": "{{ route('posts.index') }}?search={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      }
-    }
-  ]
-}
-</script>
+@php
+$siteSchema = [
+    '@context' => 'https://schema.org',
+    '@graph'   => [
+        [
+            '@type' => 'Organization',
+            '@id'   => config('app.url') . '/#organization',
+            'name'  => 'Anim24',
+            'url'   => config('app.url'),
+            'logo'  => [
+                '@type' => 'ImageObject',
+                'url'   => asset('images/logo.png'),
+            ],
+        ],
+        [
+            '@type'     => 'WebSite',
+            '@id'       => config('app.url') . '/#website',
+            'url'       => config('app.url'),
+            'name'      => 'Anim24',
+            'publisher' => ['@id' => config('app.url') . '/#organization'],
+            'potentialAction' => [
+                '@type'       => 'SearchAction',
+                'target'      => [
+                    '@type'       => 'EntryPoint',
+                    'urlTemplate' => route('posts.index') . '?search={search_term_string}',
+                ],
+                'query-input' => 'required name=search_term_string',
+            ],
+        ],
+    ],
+];
+@endphp
+<script type="application/ld+json">{!! json_encode($siteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
