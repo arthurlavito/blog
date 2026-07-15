@@ -140,8 +140,10 @@ class BackfillHtml extends Command
             $raw
         );
 
-        // ── 2. Split on blank lines to get paragraph blocks ───────────────────
-        $blocks = preg_split('/\n{2,}/', trim($raw));
+        // ── 2. Split on any newline — every line is its own paragraph.
+        //       These posts were written for nl2br(), so each \n is a paragraph
+        //       break, not a soft line-wrap. Double newlines also split cleanly.
+        $blocks = preg_split('/\n+/', trim($raw));
 
         // ── 3. Detect heading-like lines ──────────────────────────────────────
         $hints = [];
@@ -153,22 +155,17 @@ class BackfillHtml extends Command
                 continue;
             }
 
-            $lines = explode("\n", $block);
-
-            // A "heading-like" block is a single short line, Title-Cased,
-            // with no ending sentence punctuation.
+            // Flag short Title-Cased lines with no sentence-ending punctuation
+            // as possible headings for human review.
             if (
-                count($lines) === 1
-                && mb_strlen($block) <= 80
+                mb_strlen($block) <= 80
                 && ! preg_match('/[.?!,;:]$/', $block)
                 && preg_match('/\b[A-Z]/', $block)
             ) {
                 $hints[] = $block;
             }
 
-            // Build the paragraph: single newlines become <br>
-            $inner = implode('<br>', array_map('htmlspecialchars', $lines));
-            $paragraphs[] = "<p>{$inner}</p>";
+            $paragraphs[] = '<p>' . htmlspecialchars($block) . '</p>';
         }
 
         $html = implode("\n", $paragraphs);

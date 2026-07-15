@@ -114,6 +114,26 @@ class Phase1ContentTest extends TestCase
         $this->assertStringContainsString('Second paragraph', $updated);
     }
 
+    public function test_backfill_treats_single_newlines_as_paragraph_breaks(): void
+    {
+        // Posts were written for nl2br() — single \n between sentences = new paragraph.
+        $author = User::factory()->create(['role' => 'author']);
+        $post   = Post::factory()->create([
+            'user_id' => $author->id,
+            'content' => "Line one.\nLine two.\nLine three.",
+            'status'  => 0,
+        ]);
+
+        Artisan::call('posts:backfill-html', ['--id' => $post->id]);
+
+        $updated = $post->fresh()->content;
+        // Each line must be its own <p>, not a single paragraph with <br> inside.
+        $this->assertStringContainsString('<p>Line one.</p>', $updated);
+        $this->assertStringContainsString('<p>Line two.</p>', $updated);
+        $this->assertStringContainsString('<p>Line three.</p>', $updated);
+        $this->assertStringNotContainsString('<br>', $updated);
+    }
+
     public function test_backfill_extracts_tags_string_from_body(): void
     {
         $author = User::factory()->create(['role' => 'author']);
