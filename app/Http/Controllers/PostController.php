@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\Category;
+use App\Services\ContentSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
@@ -78,6 +79,7 @@ class PostController extends Controller
         ]);
 
         $validated['user_id'] = auth()->id();
+        $validated['content'] = app(ContentSanitizer::class)->sanitize($validated['content']);
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
@@ -85,7 +87,7 @@ class PostController extends Controller
             $path = 'posts/' . $filename;
 
             $image = Image::read($file)
-                ->scale(width: 1200) 
+                ->scale(width: 1200)
                 ->toWebp(80);
 
             Storage::disk('public')->put($path, (string) $image);
@@ -149,6 +151,8 @@ class PostController extends Controller
             'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
+        $validated['content'] = app(ContentSanitizer::class)->sanitize($validated['content']);
+
         if ($request->hasFile('image')) {
             if ($post->image) {
                 Storage::disk('public')->delete($post->image);
@@ -159,7 +163,7 @@ class PostController extends Controller
             $path = 'posts/' . $filename;
 
             $image = Image::read($file)
-                ->scale(width: 1200) 
+                ->scale(width: 1200)
                 ->toWebp(80);
 
             Storage::disk('public')->put($path, (string) $image);
