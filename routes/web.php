@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthorRequestController;
+use App\Http\Controllers\TagController;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 
@@ -111,6 +112,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 | Final Dynamic Routes
 |--------------------------------------------------------------------------
 */
+// Clean URL archives — before the slug catch-all
+Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
+Route::get('/tag/{tag:slug}', [TagController::class, 'show'])->name('tags.show');
+
 // Placed at the end to prevent hijacking resource routes
 Route::get('/posts/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 

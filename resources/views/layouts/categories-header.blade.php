@@ -8,16 +8,16 @@
 
             <a href="{{ route('posts.index') }}"
                class="px-3 py-1 rounded-full text-sm
-               {{ request()->missing('category')
+               {{ Route::currentRouteName() === 'posts.index'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-200' }}">
                 All
             </a>
 
             @foreach($categories as $cat)
-                <a href="{{ route('posts.index', ['category' => $cat->id]) }}"
+                <a href="{{ route('categories.show', $cat) }}"
                    class="px-3 py-1 rounded-full text-sm
-                   {{ (int) request('category') === $cat->id
+                   {{ Route::currentRouteName() === 'categories.show' && isset($activeCategory) && $activeCategory->id === $cat->id
                         ? 'bg-indigo-600 text-white'
                         : 'bg-white text-gray-700 hover:bg-gray-200' }}">
                     {{ $cat->name }}
