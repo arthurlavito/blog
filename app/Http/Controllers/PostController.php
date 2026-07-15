@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\Category;
+use App\Services\ActivityLogger;
 use App\Services\ContentSanitizer;
 use App\Services\RelatedPostsService;
 use Illuminate\Http\Request;
@@ -95,6 +96,9 @@ class PostController extends Controller
         $validated['noindex']  = $request->boolean('noindex');
         $validated['user_id']  = auth()->id();
         $validated['content']  = app(ContentSanitizer::class)->sanitize($validated['content']);
+        $validated['status']   = auth()->user()->isAdmin()
+            ? Post::STATUS_PUBLISHED
+            : Post::STATUS_DRAFT;
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
@@ -109,11 +113,17 @@ class PostController extends Controller
             $validated['image'] = $path;
         }
 
-        Post::create($validated);
+        $post = Post::create($validated);
+
+        app(ActivityLogger::class)->log('post_created', $post);
 
         Cache::forget('nav_categories');
 
-        return redirect()->route('dashboard')->with('success', 'Post published!');
+        $message = $validated['status'] === Post::STATUS_PUBLISHED
+            ? 'Post published!'
+            : 'Post saved as draft.';
+
+        return redirect()->route('dashboard')->with('success', $message);
     }
 
     /**
@@ -219,9 +229,55 @@ class PostController extends Controller
 
         $post->update($validated);
 
+        app(ActivityLogger::class)->log('post_updated', $post);
+
         Cache::forget('nav_categories');
 
-        return redirect()->route('posts.index')->with('success', 'Post updated.');
+        return redirect()->route('posts.show', $post)->with('success', 'Post updated.');
+    }
+
+    /**
+     * Author submits their draft for admin review.
+     */
+    public function submitForReview(Post $post): RedirectResponse
+    {
+        $this->authorize('update', $post);
+
+        abort_if($post->status === Post::STATUS_PUBLISHED, 403, 'Post is already published.');
+
+        $post->update(['status' => Post::STATUS_PENDING]);
+
+        app(ActivityLogger::class)->log('post_submitted', $post, 'Submitted for review');
+
+        return back()->with('success', 'Post submitted for review.');
+    }
+
+    /**
+     * Admin publishes a pending post.
+     */
+    public function publishPost(Post $post): RedirectResponse
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $post->update(['status' => Post::STATUS_PUBLISHED]);
+
+        app(ActivityLogger::class)->log('post_published', $post, 'Published by admin');
+
+        return back()->with('success', 'Post published.');
+    }
+
+    /**
+     * Admin rejects a pending post (returns it to draft).
+     */
+    public function rejectPost(Post $post): RedirectResponse
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $post->update(['status' => Post::STATUS_DRAFT]);
+
+        app(ActivityLogger::class)->log('post_rejected', $post, 'Returned to draft by admin');
+
+        return back()->with('success', 'Post returned to draft.');
     }
 
     /**

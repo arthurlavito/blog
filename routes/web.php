@@ -10,6 +10,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthorRequestController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\AuthorController;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 
@@ -68,6 +69,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::post('/author-request', [AuthorRequestController::class, 'submit'])->name('author.request');
 
+    // Editorial workflow — author submits draft for review
+    Route::post('/posts/{post}/submit', [PostController::class, 'submitForReview'])->name('posts.submit');
+
     /*
     |--------------------------------------------------------------------------
     | Author & Admin Only: Post Management
@@ -90,8 +94,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Admin Management Group
         Route::prefix('admin')->name('admin.')->group(function () {
             
-            // Post Features (FIXED: This solves the RouteNotFoundException)
+            // Post Features
             Route::post('/posts/{post}/feature', [PostController::class, 'toggleFeature'])->name('posts.feature');
+
+            // Editorial workflow — admin publish / reject
+            Route::post('/posts/{post}/publish', [PostController::class, 'publishPost'])->name('posts.publish');
+            Route::post('/posts/{post}/reject',  [PostController::class, 'rejectPost'])->name('posts.reject');
 
             // User Management
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -116,6 +124,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Clean URL archives — before the slug catch-all
 Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('/tag/{tag:slug}', [TagController::class, 'show'])->name('tags.show');
+Route::get('/author/{user}', [AuthorController::class, 'show'])->name('authors.show');
 
 // Placed at the end to prevent hijacking resource routes
 Route::get('/posts/{post:slug}', [PostController::class, 'show'])->name('posts.show');

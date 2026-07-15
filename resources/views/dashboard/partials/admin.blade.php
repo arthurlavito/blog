@@ -21,6 +21,43 @@
     </div>
 </div>
 
+{{-- Pending Review Queue --}}
+@php $pendingPosts = \App\Models\Post::with('user')->pending()->latest()->get(); @endphp
+@if($pendingPosts->isNotEmpty())
+<div class="bg-amber-50 border border-amber-100 rounded-[2.5rem] p-8 mb-8">
+    <h3 class="font-black text-amber-800 uppercase tracking-widest text-xs mb-4">
+        Pending Review — {{ $pendingPosts->count() }} {{ $pendingPosts->count() === 1 ? 'Post' : 'Posts' }}
+    </h3>
+    <div class="space-y-3">
+        @foreach($pendingPosts as $pending)
+            <div class="flex items-center justify-between bg-white rounded-2xl px-5 py-3 border border-amber-100">
+                <div>
+                    <p class="text-sm font-bold text-gray-800">{{ $pending->title }}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">by {{ $pending->user->name ?? '—' }} · {{ $pending->updated_at->diffForHumans() }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <form action="{{ route('admin.posts.publish', $pending) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-4 py-1.5 text-[9px] font-black uppercase rounded-lg bg-emerald-100 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition-all">
+                            Publish
+                        </button>
+                    </form>
+                    <form action="{{ route('admin.posts.reject', $pending) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-4 py-1.5 text-[9px] font-black uppercase rounded-lg bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all">
+                            Reject
+                        </button>
+                    </form>
+                    <a href="{{ route('posts.edit', $pending) }}" class="px-4 py-1.5 text-[9px] font-black uppercase rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">
+                        Review
+                    </a>
+                </div>
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
 {{-- Quick Management Section --}}
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
     

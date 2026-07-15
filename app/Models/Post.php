@@ -17,6 +17,10 @@ class Post extends Model implements Feedable
 {
     use HasFactory;
 
+    public const STATUS_PUBLISHED = 0;
+    public const STATUS_DRAFT     = 1;
+    public const STATUS_PENDING   = 2;
+
     protected $fillable = [
         'title',
         'slug',
@@ -24,6 +28,7 @@ class Post extends Model implements Feedable
         'category_id',
         'image',
         'user_id',
+        'status',
         'views',
         'is_featured',
         'meta_title',
@@ -68,13 +73,19 @@ class Post extends Model implements Feedable
         return $slug;
     }
 
-    /**
-     * Scope: only posts with status = 0 (published/live).
-     * status defaults to 0 on creation — 0 = live, anything else = unlisted/draft.
-     */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 0);
+        return $query->where('status', self::STATUS_PUBLISHED);
+    }
+
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_PENDING);
     }
 
     /**

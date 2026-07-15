@@ -8,44 +8,66 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-                {{-- Eager loading 'category' and 'user' for optimal performance --}}
                 @forelse(\App\Models\Post::with(['category', 'user'])->latest()->get() as $post)
                     <tr class="hover:bg-gray-50/50 transition-colors group">
                         <td class="px-8 py-5">
                             <div class="flex items-center gap-4">
-                                {{-- Mini Thumbnail Preview --}}
                                 @if($post->image)
                                     <img src="{{ asset('storage/' . $post->image) }}" class="w-10 h-10 rounded-xl object-cover border border-gray-100 shadow-sm">
                                 @else
                                     <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-[10px] font-black text-indigo-300">A24</div>
                                 @endif
-                                
+
                                 <div class="truncate max-w-xs">
                                     <p class="text-sm font-bold text-gray-800 group-hover:text-[#4B0082] transition-colors truncate">
                                         {{ $post->title }}
                                     </p>
-                                    <p class="text-[10px] text-gray-400 uppercase font-black tracking-widest mt-0.5">
-                                        <span class="text-indigo-500">{{ $post->category->name ?? 'Uncategorized' }}</span> 
-                                        <span class="mx-1 text-gray-200">•</span> 
-                                        {{ $post->created_at->format('M d, Y') }}
-                                    </p>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-[10px] text-indigo-500 uppercase font-black tracking-widest">{{ $post->category->name ?? 'Uncategorized' }}</span>
+                                        <span class="text-gray-200">•</span>
+                                        <span class="text-[10px] text-gray-400">{{ $post->created_at->format('M d, Y') }}</span>
+                                        <span class="text-gray-200">•</span>
+                                        @if($post->status === \App\Models\Post::STATUS_PUBLISHED)
+                                            <span class="text-[9px] font-black uppercase px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">Published</span>
+                                        @elseif($post->status === \App\Models\Post::STATUS_PENDING)
+                                            <span class="text-[9px] font-black uppercase px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100">Pending</span>
+                                        @else
+                                            <span class="text-[9px] font-black uppercase px-2 py-0.5 bg-gray-50 text-gray-400 rounded-full border border-gray-100">Draft</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </td>
 
                         <td class="px-8 py-5 text-right">
                             <div class="flex justify-end items-center gap-3">
-                                {{-- Feature Toggle Button (Admin Only Function) --}}
-                                <form action="{{ route('admin.posts.feature', $post) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" 
-                                        class="px-3 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all 
-                                        {{ $post->is_featured 
-                                            ? 'bg-amber-100 text-amber-600 border border-amber-200' 
-                                            : 'bg-gray-50 text-gray-400 border border-gray-100 hover:border-amber-300 hover:text-amber-500' }}">
-                                        {{ $post->is_featured ? '★ Featured' : '☆ Feature' }}
-                                    </button>
-                                </form>
+                                {{-- Publish / Reject (admin, pending posts only) --}}
+                                @if($post->status === \App\Models\Post::STATUS_PENDING)
+                                    <form action="{{ route('admin.posts.publish', $post) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1.5 text-[9px] font-black uppercase rounded-lg bg-emerald-100 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition-all">
+                                            Publish
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('admin.posts.reject', $post) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1.5 text-[9px] font-black uppercase rounded-lg bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all">
+                                            Reject
+                                        </button>
+                                    </form>
+                                @else
+                                    {{-- Feature Toggle --}}
+                                    <form action="{{ route('admin.posts.feature', $post) }}" method="POST">
+                                        @csrf
+                                        <button type="submit"
+                                            class="px-3 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all
+                                            {{ $post->is_featured
+                                                ? 'bg-amber-100 text-amber-600 border border-amber-200'
+                                                : 'bg-gray-50 text-gray-400 border border-gray-100 hover:border-amber-300 hover:text-amber-500' }}">
+                                            {{ $post->is_featured ? '★ Featured' : '☆ Feature' }}
+                                        </button>
+                                    </form>
+                                @endif
 
                                 {{-- Edit Button --}}
                                 <a href="{{ route('posts.edit', $post) }}" class="px-4 py-2 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 hover:text-white transition-all">
@@ -54,7 +76,7 @@
 
                                 {{-- Delete Form --}}
                                 <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Are you sure? This will permanently delete this article.')">
-                                    @csrf 
+                                    @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-[10px] font-black uppercase text-rose-400 hover:text-rose-600 transition">
                                         Delete
