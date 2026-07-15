@@ -84,45 +84,39 @@
                             {!! $post->content !!}
                         </div>
 
-                        {{-- ================= POST HYPE BAR ================= --}}
-                        <div x-data="{ 
-                            liked: {{ (auth()->check() && $post->isLikedBy(auth()->user())) ? 'true' : 'false' }}, 
-                            count: {{ $post->likes()->count() }},
-                            toggleLike() {
-                                if (!{{ auth()->check() ? 'true' : 'false' }}) {
-                                    window.location.href = '{{ route('login') }}';
-                                    return;
-                                }
-
+                        {{-- ================= POST REACTIONS ================= --}}
+                        @php
+                            $reactionCounts = $post->likes()->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total','type');
+                            $userReaction = auth()->check() ? optional($post->likes()->where('user_id', auth()->id())->first())->type : null;
+                        @endphp
+                        <div x-data="{
+                            userReaction: {{ $userReaction ? '\''. $userReaction .'\'' : 'null' }},
+                            counts: {{ $reactionCounts->toJson() }},
+                            total() { return Object.values(this.counts).reduce((a,b)=>a+b,0); },
+                            react(type) {
+                                if (!{{ auth()->check() ? 'true' : 'false' }}) { window.location.href='{{ route('login') }}'; return; }
                                 fetch('{{ route('posts.like') }}', {
                                     method: 'POST',
-                                    headers: {
-                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json'
-                                    },
-                                    body: JSON.stringify({ 
-                                        id: {{ $post->id }}, 
-                                        type: 'post' 
-                                    })
-                                }).then(res => res.json())
-                                  .then(data => {
-                                    this.liked = data.status === 'liked';
-                                    this.count = data.count;
+                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                    body: JSON.stringify({ id: {{ $post->id }}, type: 'post', reaction: type })
+                                }).then(r=>r.json()).then(data => {
+                                    this.userReaction = data.user_reaction;
+                                    this.counts = data.counts;
                                 });
                             }
                         }" class="flex flex-col md:flex-row items-center justify-between py-6 border-t border-b border-gray-50 mb-8 gap-6">
-                            
-                            <button @click="toggleLike" 
-                                    :class="liked ? 'bg-rose-50 text-rose-500 shadow-inner' : 'bg-gray-50 text-gray-400 hover:bg-rose-50 hover:text-rose-500'"
-                                    class="flex items-center gap-3 px-8 py-4 rounded-[1.5rem] transition-all duration-300 transform active:scale-95 w-full md:w-auto justify-center group">
-                                
-                                <svg class="w-6 h-6 transform group-hover:scale-110 transition-transform" :class="liked ? 'fill-current' : 'fill-none'" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                                
-                                <span class="font-black text-sm uppercase tracking-widest" x-text="count + ' Hype'"></span>
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">React:</span>
+                                @foreach(['like'=>'❤️','love'=>'😍','fire'=>'🔥','thinking'=>'🤔'] as $type => $emoji)
+                                <button @click="react('{{ $type }}')"
+                                        :class="userReaction === '{{ $type }}' ? 'bg-indigo-100 ring-2 ring-[#4B0082]' : 'bg-gray-50 hover:bg-indigo-50'"
+                                        class="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl transition-all active:scale-95 text-sm">
+                                    <span>{{ $emoji }}</span>
+                                    <span class="text-[10px] font-black text-gray-600" x-text="counts['{{ $type }}'] || 0"></span>
+                                </button>
+                                @endforeach
+                                <span class="ml-2 text-[10px] font-black uppercase tracking-widest text-gray-400" x-text="total() + ' Hype'"></span>
+                            </div>
 
                             {{-- Social Share --}}
                             <div class="flex items-center gap-3">
@@ -224,6 +218,10 @@
                         <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
                             <form action="{{ route('comments.store', $post) }}" method="POST">
                                 @csrf
+                                {{-- Honeypot: hidden from real users, bots fill it --}}
+                                <div style="display:none" aria-hidden="true">
+                                    <input type="text" name="website" tabindex="-1" autocomplete="off">
+                                </div>
                                 <div class="flex gap-4">
                                     <img class="h-10 w-10 rounded-full hidden md:block" src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=4B0082&color=fff&bold=true" alt="" loading="lazy">
                                     <div class="flex-1 space-y-4">
@@ -254,32 +252,23 @@
                                             {{ $comment->body }}
                                         </p>
 
-                                        {{-- Consolidated Mini Hype Button --}}
-                                        <div x-data="{ 
-                                            liked: {{ (auth()->check() && $comment->isLikedBy(auth()->user())) ? 'true' : 'false' }}, 
+                                        {{-- Comment like --}}
+                                        <div x-data="{
+                                            liked: {{ (auth()->check() && $comment->isLikedBy(auth()->user())) ? 'true' : 'false' }},
                                             count: {{ $comment->likes()->count() }},
-                                            toggleHype() {
-                                                if (!{{ auth()->check() ? 'true' : 'false' }}) { 
-                                                    window.location.href = '{{ route('login') }}'; 
-                                                    return; 
-                                                }
+                                            toggle() {
+                                                if (!{{ auth()->check() ? 'true' : 'false' }}) { window.location.href='{{ route('login') }}'; return; }
                                                 fetch('{{ route('posts.like') }}', {
                                                     method: 'POST',
-                                                    headers: { 
-                                                        'X-CSRF-TOKEN': '{{ csrf_token() }}', 
-                                                        'Content-Type': 'application/json',
-                                                        'Accept': 'application/json'
-                                                    },
-                                                    body: JSON.stringify({ id: {{ $comment->id }}, type: 'comment' })
-                                                })
-                                                .then(res => res.json())
-                                                .then(data => {
-                                                    this.liked = data.status === 'liked';
-                                                    this.count = data.count;
+                                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                                    body: JSON.stringify({ id: {{ $comment->id }}, type: 'comment', reaction: 'like' })
+                                                }).then(r=>r.json()).then(data => {
+                                                    this.liked = data.user_reaction !== null;
+                                                    this.count = data.total;
                                                 });
                                             }
                                         }" class="flex items-center gap-2">
-                                            <button @click="toggleHype" 
+                                            <button @click="toggle"
                                                     :class="liked ? 'text-rose-500 bg-rose-50' : 'text-gray-400 bg-gray-50 hover:text-rose-500'"
                                                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-[10px] font-black uppercase tracking-tighter">
                                                 <svg class="w-3 h-3" :class="liked ? 'fill-current' : 'fill-none'" stroke="currentColor" viewBox="0 0 24 24">
