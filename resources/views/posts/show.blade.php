@@ -143,8 +143,76 @@
                                 <a href="{{ route('posts.edit', $post) }}" class="px-6 py-3 bg-amber-400 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-amber-500 transition shadow-lg shadow-amber-100">Edit Post</a>
                             @endcan
                         </div>
+
+                        {{-- ── Prev / Next Navigation ── --}}
+                        @if($prevPost || $nextPost)
+                        <div class="mt-10 pt-8 border-t border-gray-50 grid grid-cols-2 gap-4">
+                            <div>
+                                @if($prevPost)
+                                <a href="{{ route('posts.show', $prevPost) }}"
+                                   class="group flex flex-col gap-1 p-4 bg-gray-50 rounded-2xl hover:bg-indigo-50 transition">
+                                    <span class="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-[#4B0082]">← Previous</span>
+                                    <span class="text-sm font-black text-gray-700 group-hover:text-[#4B0082] leading-snug line-clamp-2">
+                                        {{ \Illuminate\Support\Str::limit($prevPost->title, 55) }}
+                                    </span>
+                                </a>
+                                @endif
+                            </div>
+                            <div>
+                                @if($nextPost)
+                                <a href="{{ route('posts.show', $nextPost) }}"
+                                   class="group flex flex-col gap-1 p-4 bg-gray-50 rounded-2xl hover:bg-indigo-50 transition text-right">
+                                    <span class="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-[#4B0082]">Next →</span>
+                                    <span class="text-sm font-black text-gray-700 group-hover:text-[#4B0082] leading-snug line-clamp-2">
+                                        {{ \Illuminate\Support\Str::limit($nextPost->title, 55) }}
+                                    </span>
+                                </a>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </article>
+
+                {{-- ── Related Articles ── --}}
+                @if($relatedPosts->isNotEmpty())
+                <div class="mt-8">
+                    <h3 class="text-xl font-black text-gray-900 uppercase tracking-tighter mb-6">
+                        Related <span class="text-[#4B0082]">Articles</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        @foreach($relatedPosts as $related)
+                        <article class="group bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
+                            <div class="relative h-40 overflow-hidden">
+                                @if($related->image)
+                                    <img src="{{ asset('storage/'.$related->image) }}" alt="{{ $related->title }}"
+                                         loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                @else
+                                    <div class="w-full h-full bg-indigo-50 flex items-center justify-center">
+                                        <span class="text-[#4B0082] font-black text-2xl opacity-20">ANIM24</span>
+                                    </div>
+                                @endif
+                                @if($related->category)
+                                <div class="absolute top-3 left-3">
+                                    <span class="px-3 py-1 bg-white/90 backdrop-blur text-[#4B0082] text-[9px] font-black uppercase tracking-widest rounded-lg">
+                                        {{ $related->category->name }}
+                                    </span>
+                                </div>
+                                @endif
+                            </div>
+                            <div class="p-5 flex flex-col flex-grow">
+                                <h4 class="text-sm font-black text-gray-900 leading-snug group-hover:text-[#4B0082] transition-colors mb-3 line-clamp-2">
+                                    <a href="{{ route('posts.show', $related) }}">{{ $related->title }}</a>
+                                </h4>
+                                <div class="mt-auto text-[9px] font-black uppercase text-gray-400 tracking-widest">
+                                    {{ $related->created_at->diffForHumans() }}
+                                </div>
+                            </div>
+                        </article>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
 
                 {{-- ================= DISCUSSION HUB ================= --}}
                 <div class="mt-12 space-y-8">
@@ -253,6 +321,29 @@
                         @endforeach
                     </ul>
                 </div>
+
+                @if($morePosts->isNotEmpty())
+                <div class="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+                    <h3 class="text-xs font-black uppercase text-gray-400 tracking-[0.2em] mb-6 flex items-center">
+                        <span class="w-1.5 h-1.5 bg-rose-500 rounded-full mr-2"></span>
+                        More from {{ $post->category->name }}
+                    </h3>
+                    <ul class="space-y-5">
+                        @foreach($morePosts as $more)
+                        <li class="group">
+                            <a href="{{ route('posts.show', $more) }}" class="flex flex-col">
+                                <span class="text-sm font-bold text-gray-800 group-hover:text-[#4B0082] transition-colors leading-tight">
+                                    {{ \Illuminate\Support\Str::limit($more->title, 55) }}
+                                </span>
+                                <span class="text-[10px] font-black uppercase text-gray-300 mt-1.5 tracking-widest">
+                                    {{ $more->created_at->diffForHumans() }}
+                                </span>
+                            </a>
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
 
                 <div class="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
                     <h3 class="text-xs font-black uppercase text-gray-400 tracking-[0.2em] mb-6 flex items-center"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></span>Topics</h3>
