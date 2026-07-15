@@ -22,6 +22,14 @@ class PostController extends Controller
      */
     public function index(Request $request)
     {
+        // Redirect legacy ?category=ID links to clean /category/{slug} URLs (301 for SEO)
+        if ($catId = $request->query('category')) {
+            $cat = Category::find($catId);
+            if ($cat) {
+                return redirect()->route('categories.show', $cat)->setStatusCode(301);
+            }
+        }
+
         // 1. Get the latest featured post (cached 10 min)
         $featuredPost = Cache::remember('featured_post', 600, fn () =>
             Post::with('user', 'category')
@@ -107,11 +115,12 @@ class PostController extends Controller
     public function show(Post $post)
     {
         $post->load([
-            'user', 
+            'user',
             'category',
-            'likes', 
-            'comments.user', 
-            'comments.likes'
+            'tags',
+            'likes',
+            'comments.user',
+            'comments.likes',
         ]);
 
         $post->increment('views');

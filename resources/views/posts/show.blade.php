@@ -24,9 +24,16 @@
                                  loading="lazy"
                                  class="w-full h-full object-cover">
                             <div class="absolute top-6 left-6">
-                                <span class="px-4 py-2 bg-[#4B0082] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg">
-                                    {{ $post->category->name ?? 'Uncategorized' }}
-                                </span>
+                                @if($post->category)
+                                    <a href="{{ route('categories.show', $post->category) }}"
+                                       class="px-4 py-2 bg-[#4B0082] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg hover:bg-indigo-900 transition">
+                                        {{ $post->category->name }}
+                                    </a>
+                                @else
+                                    <span class="px-4 py-2 bg-[#4B0082] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg">
+                                        Uncategorized
+                                    </span>
+                                @endif
                             </div>
                         </div>
                     @endif
@@ -49,6 +56,18 @@
                                 </p>
                             </div>
                         </div>
+
+                        {{-- Tags --}}
+                        @if($post->tags->isNotEmpty())
+                        <div class="flex flex-wrap gap-2 mb-8">
+                            @foreach($post->tags as $tag)
+                                <a href="{{ route('tags.show', $tag) }}"
+                                   class="px-4 py-1.5 bg-indigo-50 text-[#4B0082] text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-indigo-100 transition">
+                                    #{{ $tag->name }}
+                                </a>
+                            @endforeach
+                        </div>
+                        @endif
 
                         {{-- Body Content — already purified by ContentSanitizer on save --}}
                         <div class="post-body mb-12">
@@ -229,7 +248,7 @@
                     <h3 class="text-xs font-black uppercase text-gray-400 tracking-[0.2em] mb-6 flex items-center"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></span>Topics</h3>
                     <div class="flex flex-wrap gap-2">
                         @foreach($categories as $cat)
-                            <a href="{{ route('posts.index', ['category' => $cat->id]) }}" class="px-4 py-2 bg-gray-50 rounded-xl text-[11px] font-black text-gray-500 uppercase tracking-tighter hover:bg-indigo-50 hover:text-[#4B0082] transition">#{{ $cat->name }}</a>
+                            <a href="{{ route('categories.show', $cat) }}" class="px-4 py-2 bg-gray-50 rounded-xl text-[11px] font-black text-gray-500 uppercase tracking-tighter hover:bg-indigo-50 hover:text-[#4B0082] transition">#{{ $cat->name }}</a>
                         @endforeach
                     </div>
                 </div>
