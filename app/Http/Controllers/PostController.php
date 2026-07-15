@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use App\Models\Category;
 use App\Services\ContentSanitizer;
+use App\Services\RelatedPostsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
@@ -118,7 +119,7 @@ class PostController extends Controller
     /**
      * Display the specified post.
      */
-    public function show(Post $post)
+    public function show(Post $post, RelatedPostsService $related)
     {
         $post->load([
             'user',
@@ -131,12 +132,37 @@ class PostController extends Controller
 
         $post->increment('views');
 
-        $latestPosts = Post::published()->latest()->take(5)->get();
-        $categories = Cache::remember('nav_categories', 3600, fn () =>
+        $categories  = Cache::remember('nav_categories', 3600, fn () =>
             Category::orderBy('name')->get()
         );
 
-        return view('posts.show', compact('post', 'latestPosts', 'categories'));
+        $latestPosts = Post::published()->latest()->take(5)->get();
+
+        $relatedPosts = $related->get($post);
+
+        $prevPost = Post::published()
+            ->where('created_at', '<', $post->created_at)
+            ->orderByDesc('created_at')
+            ->first(['id', 'title', 'slug']);
+
+        $nextPost = Post::published()
+            ->where('created_at', '>', $post->created_at)
+            ->orderBy('created_at')
+            ->first(['id', 'title', 'slug']);
+
+        $morePosts = $post->category_id
+            ? Post::published()
+                ->where('category_id', $post->category_id)
+                ->where('id', '!=', $post->id)
+                ->latest()
+                ->take(4)
+                ->get(['id', 'title', 'slug', 'created_at'])
+            : collect();
+
+        return view('posts.show', compact(
+            'post', 'categories', 'latestPosts',
+            'relatedPosts', 'prevPost', 'nextPost', 'morePosts'
+        ));
     }
 
     /**
