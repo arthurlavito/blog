@@ -140,7 +140,13 @@ class PostController extends Controller
             'comments.likes',
         ]);
 
-        $post->increment('views');
+        // Buffer guest views in cache; FlushPostViews command writes to DB every 5 min.
+        // Authenticated views are not counted — approximate by design.
+        if (!auth()->check()) {
+            $buffer = Cache::get('post_views_buffer', []);
+            $buffer[$post->id] = ($buffer[$post->id] ?? 0) + 1;
+            Cache::put('post_views_buffer', $buffer, now()->addHours(2));
+        }
 
         $categories  = Cache::remember('nav_categories', 3600, fn () =>
             Category::orderBy('name')->get()

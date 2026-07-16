@@ -37,8 +37,8 @@
 <!-- Scripts -->
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-<!-- Google Analytics (GA4) -->
-@if(config('services.google.analytics_id'))
+<!-- Google Analytics (GA4) — production only -->
+@if(config('services.google.analytics_id') && app()->environment('production'))
 @php $gaId = config('services.google.analytics_id'); @endphp
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
 <script>

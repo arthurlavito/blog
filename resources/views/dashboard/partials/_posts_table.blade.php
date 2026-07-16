@@ -4,11 +4,12 @@
             <thead>
                 <tr class="text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-50">
                     <th class="px-8 py-4">Article Details</th>
+                    <th class="px-8 py-4 text-center">Views</th>
                     <th class="px-8 py-4 text-right">Management Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-                @forelse(\App\Models\Post::with(['category', 'user'])->latest()->get() as $post)
+                @forelse(\App\Models\Post::with(['category', 'user'])->orderByDesc('views')->get() as $post)
                     <tr class="hover:bg-gray-50/50 transition-colors group">
                         <td class="px-8 py-5">
                             <div class="flex items-center gap-4">
@@ -37,6 +38,11 @@
                                     </div>
                                 </div>
                             </div>
+                        </td>
+
+                        <td class="px-8 py-5 text-center">
+                            <span class="text-sm font-black text-gray-700">{{ number_format($post->views) }}</span>
+                            <p class="text-[9px] text-gray-400 uppercase tracking-widest">views</p>
                         </td>
 
                         <td class="px-8 py-5 text-right">
@@ -87,7 +93,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="2" class="px-8 py-16 text-center">
+                        <td colspan="3" class="px-8 py-16 text-center">
                             <div class="flex flex-col items-center">
                                 <div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-3">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

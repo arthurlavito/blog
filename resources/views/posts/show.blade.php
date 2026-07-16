@@ -121,10 +121,22 @@
                             {{-- Social Share --}}
                             <div class="flex items-center gap-3">
                                 <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-2">Share:</span>
-                                <a href="https://twitter.com/intent/tweet?url={{ url()->current() }}" target="_blank" class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-black hover:text-white transition shadow-sm">
+                                <a href="https://twitter.com/intent/tweet?url={{ url()->current() }}&text={{ urlencode($post->title) }}"
+                                   target="_blank" rel="noopener"
+                                   data-share-network="x"
+                                   class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-black hover:text-white transition shadow-sm">
                                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                                 </a>
-                                <button onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied!')" class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition shadow-sm">
+                                <a href="https://wa.me/?text={{ urlencode($post->title . ' ' . url()->current()) }}"
+                                   target="_blank" rel="noopener"
+                                   data-share-network="whatsapp"
+                                   class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-green-500 hover:text-white transition shadow-sm">
+                                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                </a>
+                                <button data-share-network="copy"
+                                        onclick="navigator.clipboard.writeText(window.location.href).then(()=>{ this.title='Copied!'; setTimeout(()=>this.title='Copy link',2000) })"
+                                        title="Copy link"
+                                        class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition shadow-sm">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
                                 </button>
                             </div>
@@ -196,7 +208,7 @@
                             </div>
                             <div class="p-5 flex flex-col flex-grow">
                                 <h4 class="text-sm font-black text-gray-900 leading-snug group-hover:text-[#4B0082] transition-colors mb-3 line-clamp-2">
-                                    <a href="{{ route('posts.show', $related) }}">{{ $related->title }}</a>
+                                    <a href="{{ route('posts.show', $related) }}" data-related-slug="{{ $related->slug }}">{{ $related->title }}</a>
                                 </h4>
                                 <div class="mt-auto text-[9px] font-black uppercase text-gray-400 tracking-widest">
                                     {{ $related->created_at->diffForHumans() }}
@@ -381,4 +393,43 @@ if ($keywords->isNotEmpty()) {
 }
 @endphp
 <script type="application/ld+json">{!! json_encode($newsArticle, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+
+{{-- GA4 custom events: post_read (50% scroll, once), share_click, related_click --}}
+<script>
+(function () {
+    if (typeof gtag !== 'function') return;
+
+    var slug     = @json($post->slug);
+    var category = @json($post->category?->name ?? '');
+    var author   = @json($post->user?->name ?? '');
+
+    // post_read — fires once when the user scrolls past 50% of the article
+    var fired = false;
+    var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (!fired && entry.isIntersecting) {
+                fired = true;
+                gtag('event', 'post_read', { slug: slug, category: category, author: author });
+                observer.disconnect();
+            }
+        });
+    }, { threshold: 0.5 });
+    var article = document.querySelector('.post-body');
+    if (article) observer.observe(article);
+
+    // share_click — tracks X, WhatsApp, copy-link
+    document.querySelectorAll('[data-share-network]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            gtag('event', 'share_click', { network: el.dataset.shareNetwork });
+        });
+    });
+
+    // related_click — tracks clicks on related article links
+    document.querySelectorAll('[data-related-slug]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            gtag('event', 'related_click', { target_slug: el.dataset.relatedSlug });
+        });
+    });
+}());
+</script>
 @endpush
