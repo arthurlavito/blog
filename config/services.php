@@ -37,7 +37,8 @@ return [
 
     'google' => [
         'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
-        'analytics_id'      => env('GOOGLE_ANALYTICS_ID'),
+        // GA4_MEASUREMENT_ID is the canonical key; GOOGLE_ANALYTICS_ID kept for back-compat
+        'analytics_id'      => env('GA4_MEASUREMENT_ID', env('GOOGLE_ANALYTICS_ID')),
         'adsense_client_id' => env('GOOGLE_ADSENSE_CLIENT_ID'),
     ],
 
